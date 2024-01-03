@@ -24,15 +24,24 @@ func main() {
 		os.Exit(-1)
 	}
 
-	log.Printf("Got %d quiz categories", len(categories))
-
+	var questionCount, answerCount int
 	for _, cat := range categories {
+		questionCount += len(cat.Pool)
+		for _, q := range cat.Pool {
+			answerCount += len(q.Correct)
+			answerCount += len(q.Wrong)
+		}
 		data, err := json.MarshalIndent(cat, "", "	")
 		if err != nil {
 			log.Printf("Error marshaling category '%s': %v", cat.Title, err)
 			continue
 		}
-		os.WriteFile("sheets/"+cat.Title+".json", data, 0644)
+		err = os.WriteFile("sheets/"+cat.Title+".json", data, 0644)
+		if err != nil {
+			log.Printf("Error writing json file of category '%s': %v", cat.Title, err)
+		}
 	}
+
+	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(categories), questionCount, answerCount)
 
 }
