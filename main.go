@@ -1,13 +1,14 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
+	"fmt"
 	logger "log"
 	"os"
+	"os/signal"
 	"quiz_backend/config"
-	"quiz_backend/google"
-
-	"github.com/spf13/viper"
+	"quiz_backend/global"
+	"syscall"
 )
 
 var log = logger.New(logger.Writer(), "[MAIN] ", logger.LstdFlags|logger.Lmsgprefix)
@@ -17,31 +18,17 @@ func init() {
 }
 
 func main() {
-	log.Println("Getting Quiz from Google Spreadsheet...")
-	categories, err := google.GetQuizFromSpreadsheet(viper.GetString("google.spreadsheetID"))
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
+	defer cancel()
+
+	err := global.FetchQuestions()
 	if err != nil {
-		log.Printf("Error getting quiz from Google Spreadsheet: %v", err)
+		log.Printf("Error getting quiz: %v", err)
 		os.Exit(-1)
 	}
 
-	var questionCount, answerCount int
-	for _, cat := range categories {
-		questionCount += len(cat.Pool)
-		for _, q := range cat.Pool {
-			answerCount += len(q.Correct)
-			answerCount += len(q.Wrong)
-		}
-		data, err := json.MarshalIndent(cat, "", "	")
-		if err != nil {
-			log.Printf("Error marshaling category '%s': %v", cat.Title, err)
-			continue
-		}
-		err = os.WriteFile("sheets/"+cat.Title+".json", data, 0644)
-		if err != nil {
-			log.Printf("Error writing json file of category '%s': %v", cat.Title, err)
-		}
-	}
-
-	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(categories), questionCount, answerCount)
-
+	fmt.Println("Press Ctrl+C to exit")
+	<-ctx.Done()
+	fmt.Println()
+	fmt.Println("Shutting down")
 }

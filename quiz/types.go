@@ -11,3 +11,6 @@ type Question struct {
 	Correct  []string `json:"correct"`
 	Wrong    []string `json:"wrong"`
 }
+
+// Questions is the main list of all Categories and Questions
+var Questions []Category
