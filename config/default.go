@@ -16,4 +16,9 @@ google:
   # The ID of your Google Spreadsheet
   # (You find it in the URL for example)
   spreadsheetID:
+
+webserver:
+  # The address to start the webserver on. Typically on localhost with a port 'n' that is 
+  # 1024 <= n < 65536
+  address: :8080
 `
