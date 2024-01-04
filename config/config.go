@@ -20,7 +20,7 @@ func Load() {
 	LoadDefaultConfig()
 
 	err := viper.MergeInConfig()
-	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+	if os.IsNotExist(err) {
 		writeDefaultConfig()
 	} else if err != nil {
 		panic("Error loading config: " + err.Error())
