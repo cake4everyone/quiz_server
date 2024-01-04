@@ -1,5 +1,9 @@
 package quiz
 
+import (
+	logger "log"
+)
+
 type Category struct {
 	Title       string      `json:"-"`
 	Description string      `json:"description"`
@@ -14,3 +18,5 @@ type Question struct {
 
 // Questions is the main list of all Categories and Questions
 var Questions []Category
+
+var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
