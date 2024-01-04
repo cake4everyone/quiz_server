@@ -51,8 +51,7 @@ func initHandler() http.Handler {
 	r := mux.NewRouter()
 	r.NotFoundHandler = http.HandlerFunc(handle404)
 
-	r.HandleFunc("/api/session/create", handleCreateSession).Methods("POST")
-	//r.
+	r.HandleFunc("/api/questions/fetch", handleFetchQuestions).Methods("PUT")
 
 	return r
 }
