@@ -14,8 +14,6 @@ type Connection struct {
 	tcp     *net.TCPListener
 	conn    *net.TCPConn
 	started time.Time
-
-	pass string
 }
 
 var log = logger.New(logger.Writer(), "[TCP] ", logger.LstdFlags|logger.Lmsgprefix)
@@ -65,31 +63,61 @@ func listen(tcp *net.TCPListener) {
 			continue
 		}
 		log.Printf("<%s> verified connection!", conn.RemoteAddr().String())
+		var c Connection = Connection{
+			tcp:     tcp,
+			conn:    conn,
+			started: time.Now(),
+		}
 		conn.Write([]byte("Verified, welcome!\n"))
-		go handleTCP(conn)
+		go c.handleTCP()
 	}
 }
 
-func handleTCP(conn *net.TCPConn) {
-	conn.SetDeadline(time.Time{})
+func (c *Connection) handleTCP() {
+	c.conn.SetDeadline(time.Time{})
+	var err error
 	for {
-		msg, err := readTCP(conn)
+		var msg string
+		msg, err = c.readTCP()
 		if err != nil {
-			log.Printf("failed to read from '%s' tcp: %v", conn.RemoteAddr().String(), err)
 			break
 		}
-		go handleTCPMsg(msg)
+		if msg != "" {
+			go c.handleTCPMsg(msg)
+		}
 	}
-	log.Printf("connection with '%s' closed!", conn.RemoteAddr().String())
-	conn = nil
+	log.Printf("connection with '%s' closed: %v", c.conn.RemoteAddr().String(), err)
+	c.conn.Close()
+	c.conn = nil
 }
 
-func readTCP(conn *net.TCPConn) (string, error) {
+func (c *Connection) readTCP() (string, error) {
 	var buf []byte = make([]byte, 1024)
-	n, err := conn.Read(buf)
+	n, err := c.conn.Read(buf)
 	return strings.TrimRight(string(buf[:n]), "\n"), err
 }
 
-func handleTCPMsg(msg string) {
+func (c *Connection) handleTCPMsg(msg string) {
 	log.Printf("new message: %s", msg)
+	n := strings.IndexByte(msg, ' ')
+	var cmd, data string
+	if n > 0 {
+		cmd = msg[:n]
+		data = strings.TrimLeft(msg[n:], " ")
+	} else {
+		cmd = msg
+	}
+
+	switch TCPCommand(cmd) {
+	case CommandAUTH:
+		c.handleAUTH(data)
+	case CommandEND:
+		c.handleEND(data)
+	case CommandGAME:
+		c.handleGAME(data)
+	case CommandNEXT:
+		c.handleNEXT(data)
+	case CommandVOTE:
+		c.handleVOTE(data)
+	}
 }

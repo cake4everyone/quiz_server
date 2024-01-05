@@ -16,7 +16,18 @@ type Question struct {
 	Wrong    []string `json:"wrong"`
 }
 
-// Questions is the main list of all Categories and Questions
-var Questions []Category
+type categoriesSlice []Category
+
+// Categories is the main list of all Categories and Categories
+var Categories categoriesSlice
 
 var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
+
+func (cs categoriesSlice) GetCategoryByName(name string) Category {
+	for _, c := range cs {
+		if c.Title == name {
+			return c
+		}
+	}
+	return Category{}
+}

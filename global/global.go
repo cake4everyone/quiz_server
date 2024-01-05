@@ -16,13 +16,13 @@ func FetchQuestions() error {
 	log.Println("Getting Quiz from Google Spreadsheet...")
 
 	var err error
-	quiz.Questions, err = google.GetQuizFromSpreadsheet(viper.GetString("google.spreadsheetID"))
+	quiz.Categories, err = google.GetQuizFromSpreadsheet(viper.GetString("google.spreadsheetID"))
 	if err != nil {
 		return err
 	}
 
 	var questionCount, answerCount int
-	for _, cat := range quiz.Questions {
+	for _, cat := range quiz.Categories {
 		questionCount += len(cat.Pool)
 		for _, q := range cat.Pool {
 			answerCount += len(q.Correct)
@@ -39,7 +39,7 @@ func FetchQuestions() error {
 		}
 	}
 
-	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(quiz.Questions), questionCount, answerCount)
+	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(quiz.Categories), questionCount, answerCount)
 
 	return nil
 }
