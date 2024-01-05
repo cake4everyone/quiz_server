@@ -6,16 +6,24 @@ import (
 	"os"
 	"quiz_backend/google"
 	"quiz_backend/quiz"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
-var log = logger.New(logger.Writer(), "[QUIZ] ", logger.LstdFlags|logger.Lmsgprefix)
+var (
+	log       = logger.New(logger.Writer(), "[QUIZ] ", logger.LstdFlags|logger.Lmsgprefix)
+	lastFetch time.Time
+)
 
-func FetchQuestions() error {
+func FetchQuestions() (err error) {
+	const timeout = 30 * time.Second
+	if time.Now().Add(timeout).Before(lastFetch) {
+		return nil
+	}
+	lastFetch = time.Now()
 	log.Println("Getting Quiz from Google Spreadsheet...")
 
-	var err error
 	quiz.Categories, err = google.GetQuizFromSpreadsheet(viper.GetString("google.spreadsheetID"))
 	if err != nil {
 		return err
