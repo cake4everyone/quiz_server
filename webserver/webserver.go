@@ -51,14 +51,11 @@ func initHandler() http.Handler {
 	r := mux.NewRouter()
 	r.NotFoundHandler = http.HandlerFunc(handle404)
 
-	r.HandleFunc("/api/questions/fetch", handleFetchQuestions).Methods("PUT")
+	r.HandleFunc("/questions/fetch", handleFetchQuestions).Methods("PUT")
 
 	return r
 }
 
 func handle404(w http.ResponseWriter, r *http.Request) {
-	log.Printf("404 << %s: %s %s", r.RemoteAddr, r.Method, r.URL)
-
 	w.WriteHeader(404)
-	w.Write([]byte(""))
 }

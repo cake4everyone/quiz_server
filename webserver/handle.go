@@ -42,6 +42,7 @@ func handleFetchQuestions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Request to fetch questions by '%s'...", r.RemoteAddr)
 	err = global.FetchQuestions()
 	if err != nil {
 		log.Printf("Error on request to fetch questions: %v", err)
