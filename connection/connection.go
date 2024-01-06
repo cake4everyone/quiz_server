@@ -1,9 +1,11 @@
 package connection
 
 import (
+	"encoding/json"
 	"fmt"
 	logger "log"
 	"net"
+	"quiz_backend/quiz"
 	"strings"
 	"time"
 
@@ -14,7 +16,11 @@ type Connection struct {
 	tcp     *net.TCPListener
 	conn    *net.TCPConn
 	started time.Time
+	Game    *quiz.Game
 }
+
+// AllConnections is a list of all currently active connections
+var AllConnections []*Connection
 
 var log = logger.New(logger.Writer(), "[TCP] ", logger.LstdFlags|logger.Lmsgprefix)
 
@@ -68,7 +74,8 @@ func listen(tcp *net.TCPListener) {
 			conn:    conn,
 			started: time.Now(),
 		}
-		conn.Write([]byte("Verified, welcome!\n"))
+		AllConnections = append(AllConnections, &c)
+		c.Reply(CommandINFO, []byte("Verified, welcome!"))
 		go c.handleTCP()
 	}
 }
@@ -87,6 +94,13 @@ func (c *Connection) handleTCP() {
 		}
 	}
 	log.Printf("connection with '%s' closed: %v", c.conn.RemoteAddr().String(), err)
+	for i, savedConn := range AllConnections {
+		if savedConn == c {
+			// overwrite the index of the one to remove with the last element
+			AllConnections[i] = AllConnections[len(AllConnections)-1]
+			AllConnections = AllConnections[:len(AllConnections)-1]
+		}
+	}
 	c.conn.Close()
 	c.conn = nil
 }
@@ -120,4 +134,33 @@ func (c *Connection) handleTCPMsg(msg string) {
 	case CommandVOTE:
 		c.handleVOTE(data)
 	}
+}
+
+func (c Connection) Reply(cmd TCPCommand, data []byte) {
+	if len(data) > 0 {
+		data = append([]byte(cmd+" "), data...)
+	} else {
+		data = []byte(cmd)
+	}
+	data = append(data, '\n')
+	c.conn.Write(data)
+}
+
+func (c Connection) ReplyERR(msg string) {
+	c.Reply(CommandERROR, []byte("{\"error\":\""+msg+"\"}"))
+}
+
+func (c Connection) ReplyERRf(format string, a ...any) {
+	c.ReplyERR(fmt.Sprintf(format, a...))
+}
+
+func (c *Connection) sendNextRound() {
+	c.Game.Current++
+	b, err := json.Marshal(c.Game.Rounds[c.Game.Current-1])
+	if err != nil {
+		log.Printf("Failed to marshal round data: %v", err)
+		c.ReplyERR("Internal Server Error")
+		return
+	}
+	c.Reply(CommandNEXT, b)
 }

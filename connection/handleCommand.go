@@ -21,6 +21,7 @@ const (
 	CommandEND   TCPCommand = "END"
 	CommandERROR TCPCommand = "ERROR"
 	CommandGAME  TCPCommand = "GAME"
+	CommandINFO  TCPCommand = "INFO"
 	CommandNEXT  TCPCommand = "NEXT"
 	CommandSTATS TCPCommand = "STATS"
 	CommandVOTE  TCPCommand = "VOTE"
@@ -36,60 +37,57 @@ func (c *Connection) handleEND(data string) {
 
 // temporary data
 func (c *Connection) handleGAME(data string) {
-	category := quiz.Categories.GetCategoryByName("Testkeks")
-
-	question := category.Pool[0]
-	if len(category.Pool) > 1 {
-		rand.Shuffle(len(category.Pool), func(i, j int) {
-			category.Pool[i], category.Pool[j] = category.Pool[j], category.Pool[i]
-		})
-		question = category.Pool[rand.Intn(len(category.Pool)-1)]
+	var gameData struct {
+		Categories    map[string]int `json:"categories"`
+		RoundDuration int            `json:"round_duration"`
 	}
-	var answers []string
-
-	// select one correct answer
-	if len(question.Correct) > 1 {
-		rand.Shuffle(len(question.Correct), func(i, j int) {
-			question.Correct[i], question.Correct[j] = question.Correct[j], question.Correct[i]
-		})
-		answers = append(answers, question.Correct[rand.Intn(len(question.Correct)-1)])
-	} else {
-		answers = append(answers, question.Correct[0])
-	}
-
-	// select up to 3 wrong answers
-	if len(question.Wrong) > 3 {
-		rand.Shuffle(len(question.Wrong), func(i, j int) {
-			question.Wrong[i], question.Wrong[j] = question.Wrong[j], question.Wrong[i]
-		})
-		answers = append(answers, question.Wrong[:3]...)
-	} else {
-		answers = append(answers, question.Wrong...)
-	}
-
-	rand.Shuffle(len(answers), func(i, j int) {
-		answers[i], answers[j] = answers[j], answers[i]
-	})
-
-	round := roundData{
-		Question: question.Question,
-		Category: category.Title,
-		Answers:  answers,
-	}
-
-	b, err := json.Marshal(round)
+	err := json.Unmarshal([]byte(data), &gameData)
 	if err != nil {
-		log.Printf("failed to marshal round data: %v", err)
+		log.Printf("Failed to unmarshal game data: %v", err)
+		c.ReplyERR("Bad Request")
+		return
+	}
+	var rounds []*quiz.Round
+	for name, n := range gameData.Categories {
+		cat := quiz.Categories.GetCategoryByName(name)
+		if cat.Title == "" {
+			log.Printf("Failed to get category %s: unknown category", name)
+			c.ReplyERRf("Unknown Category: %s", name)
+			return
+		}
+		rounds = append(rounds, cat.GetRounds(n)...)
+	}
+	max := len(rounds)
+	if max == 0 {
+		log.Println("Failed to create game: too few questions")
+		c.ReplyERR("Bad Request")
 		return
 	}
 
-	b = append([]byte(CommandNEXT+" "), b...)
+	rand.Shuffle(max, func(i, j int) {
+		rounds[i], rounds[j] = rounds[j], rounds[i]
+	})
 
-	c.conn.Write(b)
+	for i, r := range rounds {
+		r.Current = i + 1
+		r.Max = max
+	}
+
+	c.Game = &quiz.Game{
+		Rounds: rounds,
+	}
+
+	log.Printf("Created a new game for '%s' with %d rounds", c.conn.RemoteAddr().String(), len(c.Game.Rounds))
+
+	c.sendNextRound()
 }
 
 func (c *Connection) handleNEXT(data string) {
-
+	if c.Game.Current < len(c.Game.Rounds) {
+		c.sendNextRound()
+		return
+	}
+	c.ReplyERR("end reached")
 }
 
 func (c *Connection) handleVOTE(data string) {
