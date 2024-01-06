@@ -17,22 +17,44 @@ type roundData struct {
 type TCPCommand string
 
 const (
-	CommandAUTH  TCPCommand = "AUTH"
-	CommandEND   TCPCommand = "END"
-	CommandERROR TCPCommand = "ERROR"
-	CommandGAME  TCPCommand = "GAME"
-	CommandINFO  TCPCommand = "INFO"
-	CommandNEXT  TCPCommand = "NEXT"
-	CommandSTATS TCPCommand = "STATS"
-	CommandVOTE  TCPCommand = "VOTE"
+	CommandAUTH        TCPCommand = "AUTH"
+	CommandEND         TCPCommand = "END"
+	CommandERROR       TCPCommand = "ERROR"
+	CommandGAME        TCPCommand = "GAME"
+	CommandINFO        TCPCommand = "INFO"
+	CommandNEXT        TCPCommand = "NEXT"
+	CommandSTATS       TCPCommand = "STATS"
+	CommandSTATSGAME   TCPCommand = "STATS game"
+	CommandSTATSGLOBAL TCPCommand = "STATS global"
+	CommandSTATSROUND  TCPCommand = "STATS round"
+	CommandVOTE        TCPCommand = "VOTE"
 )
 
 func (c *Connection) handleAUTH(data string) {
-
 }
 
 func (c *Connection) handleEND(data string) {
-
+	switch data {
+	case "round":
+		if c.Game == nil {
+			c.ReplyERR("no game running")
+			return
+		}
+		c.sendStatsRound()
+		if c.Game.Current >= len(c.Game.Rounds) {
+			c.handleEND("game")
+			return
+		}
+		c.Game.Current++
+		c.sendCurrentRound()
+	case "game":
+		if c.Game == nil {
+			c.ReplyERR("no game running")
+			return
+		}
+		c.sendStatsGame()
+		c.Game = nil
+	}
 }
 
 // temporary data
@@ -74,22 +96,17 @@ func (c *Connection) handleGAME(data string) {
 	}
 
 	c.Game = &quiz.Game{
-		Rounds: rounds,
+		Rounds:  rounds,
+		Current: 1,
 	}
 
 	log.Printf("Created a new game for '%s' with %d rounds", c.conn.RemoteAddr().String(), len(c.Game.Rounds))
 
-	c.sendNextRound()
+	c.sendCurrentRound()
 }
 
 func (c *Connection) handleNEXT(data string) {
-	if c.Game.Current < len(c.Game.Rounds) {
-		c.sendNextRound()
-		return
-	}
-	c.ReplyERR("end reached")
 }
 
 func (c *Connection) handleVOTE(data string) {
-
 }

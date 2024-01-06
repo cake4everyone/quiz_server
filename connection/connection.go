@@ -1,7 +1,6 @@
 package connection
 
 import (
-	"encoding/json"
 	"fmt"
 	logger "log"
 	"net"
@@ -134,33 +133,4 @@ func (c *Connection) handleTCPMsg(msg string) {
 	case CommandVOTE:
 		c.handleVOTE(data)
 	}
-}
-
-func (c Connection) Reply(cmd TCPCommand, data []byte) {
-	if len(data) > 0 {
-		data = append([]byte(cmd+" "), data...)
-	} else {
-		data = []byte(cmd)
-	}
-	data = append(data, '\n')
-	c.conn.Write(data)
-}
-
-func (c Connection) ReplyERR(msg string) {
-	c.Reply(CommandERROR, []byte("{\"error\":\""+msg+"\"}"))
-}
-
-func (c Connection) ReplyERRf(format string, a ...any) {
-	c.ReplyERR(fmt.Sprintf(format, a...))
-}
-
-func (c *Connection) sendNextRound() {
-	c.Game.Current++
-	b, err := json.Marshal(c.Game.Rounds[c.Game.Current-1])
-	if err != nil {
-		log.Printf("Failed to marshal round data: %v", err)
-		c.ReplyERR("Internal Server Error")
-		return
-	}
-	c.Reply(CommandNEXT, b)
 }

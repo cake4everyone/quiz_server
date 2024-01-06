@@ -6,8 +6,19 @@ import (
 )
 
 type Game struct {
-	Current int
-	Rounds  []*Round
+	Current       int
+	Rounds        []*Round
+	StreamerVote  int    `json:"streamer_vote"`
+	ChatVote      int    `json:"chat_vote"`
+	ChatVoteCount [4]int `json:"chat_vote_count"`
+	Summary       GameSummary
+}
+
+type GameSummary struct {
+	StreamerPoints int `json:"streamer_points"`
+	StreamerWon    int `json:"streamer_won"`
+	ChatPoints     int `json:"chat_points"`
+	ChatWon        int `json:"chat_won"`
 }
 
 type Category struct {
@@ -24,9 +35,19 @@ type Question struct {
 type Round struct {
 	Question string   `json:"question"`
 	Answers  []string `json:"answers"`
+	Correct  int      `json:"correct,omitempty"`
 	Current  int      `json:"current_round"`
 	Max      int      `json:"max_round"`
 	Category string   `json:"category"`
+}
+
+type RoundSummary struct {
+	*Round
+	StreamerPoints int    `json:"streamer_points"`
+	StreamerVote   int    `json:"streamer_vote"`
+	ChatPoints     int    `json:"chat_points"`
+	ChatVote       int    `json:"chat_vote"`
+	ChatVoteCount  [4]int `json:"chat_vote_count"`
 }
 
 type categoriesSlice []Category
@@ -100,12 +121,17 @@ func (q Question) ToRound() Round {
 		answers = append(answers, q.Wrong...)
 	}
 
+	var correct int
 	rand.Shuffle(len(answers), func(i, j int) {
 		answers[i], answers[j] = answers[j], answers[i]
+		if i == correct || j == correct {
+			correct = i + j - correct
+		}
 	})
 
 	return Round{
 		Question: q.Question,
 		Answers:  answers,
+		Correct:  correct + 1,
 	}
 }
