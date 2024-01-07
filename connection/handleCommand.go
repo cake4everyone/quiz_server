@@ -3,7 +3,10 @@ package connection
 import (
 	"encoding/json"
 	"math/rand"
+	"net"
 	"quiz_backend/quiz"
+
+	"github.com/kesuaheli/twitchgo"
 )
 
 type roundData struct {
@@ -31,6 +34,23 @@ const (
 )
 
 func (c *Connection) handleAUTH(data string) {
+	twitch := twitchgo.New("", data)
+	twitch.OnGlobalUserState(func(t *twitchgo.Twitch, userTags twitchgo.MessageTags) {
+		t.JoinChannel(userTags.DisplayName)
+		c.Reply(CommandINFO, []byte("logged in as "+userTags.DisplayName))
+	})
+	err := twitch.Connect()
+	if err != nil {
+		if opErr, ok := err.(*net.OpError); ok {
+			err = opErr.Unwrap()
+		}
+		c.ReplyERR(err.Error() + ": Is your token correct and valid?")
+		return
+	}
+	twitch.OnChannelMessage(func(t *twitchgo.Twitch, channel string, source *twitchgo.User, msg string) {
+		log.Printf("[Twitch] <%s %s> %s", channel, source.Nickname, msg)
+		t.SendMessage(channel, "test")
+	})
 }
 
 func (c *Connection) handleEND(data string) {

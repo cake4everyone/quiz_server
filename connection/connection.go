@@ -111,7 +111,11 @@ func (c *Connection) readTCP() (string, error) {
 }
 
 func (c *Connection) handleTCPMsg(msg string) {
-	log.Printf("new message: %s", msg)
+	if !strings.HasPrefix(msg, string(CommandAUTH)) {
+		log.Printf("new message: %s", msg)
+	} else {
+		log.Printf("new message: %s ***", CommandAUTH)
+	}
 	n := strings.IndexByte(msg, ' ')
 	var cmd, data string
 	if n > 0 {

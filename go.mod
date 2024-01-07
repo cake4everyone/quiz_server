@@ -2,7 +2,10 @@ module quiz_backend
 
 go 1.21.4
 
-require google.golang.org/api v0.154.0
+require (
+	github.com/kesuaheli/twitchgo v0.2.4
+	google.golang.org/api v0.154.0
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
