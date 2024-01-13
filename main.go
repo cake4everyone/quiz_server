@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"quiz_backend/config"
-	"quiz_backend/connection"
 	"quiz_backend/quiz"
 	"quiz_backend/webserver"
 	"syscall"
@@ -33,12 +32,6 @@ func main() {
 		log.Printf("Error %v", err)
 		cancel()
 	})
-
-	err = connection.Start()
-	if err != nil {
-		log.Printf("Error %v", err)
-		cancel()
-	}
 
 	fmt.Println()
 	fmt.Println("Press Ctrl+C to exit")

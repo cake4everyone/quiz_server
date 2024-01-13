@@ -18,13 +18,8 @@ google:
   spreadsheetID:
 
 webserver:
-  # The address to start the webserver on. Typically on localhost with a port 'n' that is 
-  # 1024 <= n < 65536
-  address: :8080
-
-connection:
-  # The port number for the TCP connection server. Leave empty for a random port.
-  port:
+  # The port to start the webserver on.
+  port: 51445
   # password is the very first thing a client must send in order to verify their connection. Must
   # not be an empty string.
   password: PleaseChange123

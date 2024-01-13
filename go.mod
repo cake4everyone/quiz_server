@@ -3,7 +3,8 @@ module quiz_backend
 go 1.21.4
 
 require (
-	github.com/kesuaheli/twitchgo v0.2.4
+	github.com/gorilla/websocket v1.5.1
+	github.com/kesuaheli/twitchgo v0.2.7
 	google.golang.org/api v0.154.0
 )
 
@@ -36,7 +37,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.4.0
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gorilla/mux v1.8.1
