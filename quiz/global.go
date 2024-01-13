@@ -1,18 +1,14 @@
-package global
+package quiz
 
 import (
 	"encoding/json"
-	logger "log"
 	"os"
-	"quiz_backend/google"
-	"quiz_backend/quiz"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
 var (
-	log       = logger.New(logger.Writer(), "[QUIZ] ", logger.LstdFlags|logger.Lmsgprefix)
 	lastFetch time.Time
 )
 
@@ -22,15 +18,15 @@ func FetchQuestions() (err error) {
 		return nil
 	}
 	lastFetch = time.Now()
-	log.Println("Getting Quiz from Google Spreadsheet...")
 
-	quiz.Categories, err = google.GetQuizFromSpreadsheet(viper.GetString("google.spreadsheetID"))
+	log.Println("Getting Quiz from Google Spreadsheet...")
+	Categories, err = ParseFromGoogleSheets(viper.GetString("google.spreadsheetID"))
 	if err != nil {
 		return err
 	}
 
 	var questionCount, answerCount int
-	for _, cat := range quiz.Categories {
+	for _, cat := range Categories {
 		questionCount += len(cat.Pool)
 		for _, q := range cat.Pool {
 			answerCount += len(q.Correct)
@@ -47,7 +43,7 @@ func FetchQuestions() (err error) {
 		}
 	}
 
-	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(quiz.Categories), questionCount, answerCount)
+	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(Categories), questionCount, answerCount)
 
 	return nil
 }

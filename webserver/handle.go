@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"quiz_backend/global"
+	"quiz_backend/quiz"
 
 	"github.com/spf13/viper"
 )
@@ -43,7 +43,7 @@ func handleFetchQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Request to fetch questions by '%s'...", r.RemoteAddr)
-	err = global.FetchQuestions()
+	err = quiz.FetchQuestions()
 	if err != nil {
 		log.Printf("Error on request to fetch questions: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

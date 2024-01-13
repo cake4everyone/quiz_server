@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
-var alreadyStarted bool
+var (
+	log            = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
+	alreadyStarted = false
+)
 
 // Start starts the webserver and begins to handle requests. Start takes two callback functions,
 // started(), and failed(error). These function are called to send feedback to the parent function.

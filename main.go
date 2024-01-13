@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"quiz_backend/config"
 	"quiz_backend/connection"
-	"quiz_backend/global"
+	"quiz_backend/quiz"
 	"quiz_backend/webserver"
 	"syscall"
 )
@@ -23,7 +23,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
 	defer cancel()
 
-	err := global.FetchQuestions()
+	err := quiz.FetchQuestions()
 	if err != nil {
 		log.Printf("Error getting quiz: %v", err)
 		os.Exit(-1)
