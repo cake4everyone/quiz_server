@@ -53,6 +53,7 @@ func parseSheet(s *sheets.Sheet) Category {
 }
 
 func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
+	qq = &Question{}
 	for cellNum, cell := range row.Values {
 		// skip empty cells
 		if cell == nil || cell.FormattedValue == "" {
