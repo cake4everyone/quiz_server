@@ -133,6 +133,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+func logout(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	c.Close()
+	w.WriteHeader(http.StatusOK)
+}
+
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	c, ok := isAuthorized(r)
 	if !ok {
@@ -143,7 +154,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	wsConn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade to wbsocket communication")
+		log.Printf("Failed to upgrade to websocket communication")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

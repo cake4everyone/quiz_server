@@ -64,6 +64,7 @@ func initHandler() http.Handler {
 	r.HandleFunc("/questions/fetch", handleFetchQuestions).Methods(http.MethodPut)
 	r.HandleFunc("/login", login).Methods(http.MethodPost)
 
+	r.HandleFunc("/logout", logout).Methods(http.MethodPost)
 	r.HandleFunc("/chat", handleChat).Methods(http.MethodGet)
 
 	return r
