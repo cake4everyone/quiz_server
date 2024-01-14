@@ -66,6 +66,17 @@ func (cs categoriesSlice) GetCategoryByName(name string) Category {
 	return Category{}
 }
 
+func (g Game) GetRoundSummary() RoundSummary {
+	return RoundSummary{
+		Round:          g.Rounds[g.Current-1],
+		StreamerPoints: g.Summary.StreamerPoints,
+		StreamerVote:   g.StreamerVote,
+		ChatPoints:     g.Summary.ChatPoints,
+		ChatVote:       g.ChatVote,
+		ChatVoteCount:  g.ChatVoteCount,
+	}
+}
+
 // GetRounds tries to get n questions from c. If c contains less than n questions, GetRounds returns
 // all questions of c.
 //

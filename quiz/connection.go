@@ -1,6 +1,9 @@
 package quiz
 
 import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -62,4 +65,44 @@ func (c *Connection) Close() {
 
 func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Twitch, channel string, source *twitchgo.User, msg string) {
 	log.Printf("[Twitch] <%s %s> %s", channel, source.Nickname, msg)
+}
+
+func (c *Connection) NewGame(data []byte) error {
+	var gameData struct {
+		Categories    map[string]int `json:"categories"`
+		RoundDuration int            `json:"round_duration"`
+	}
+	err := json.Unmarshal(data, &gameData)
+	if err != nil {
+		return fmt.Errorf("create game: %v", err)
+	}
+
+	var rounds []*Round
+	for name, n := range gameData.Categories {
+		cat := Categories.GetCategoryByName(name)
+		if cat.Title == "" {
+			return fmt.Errorf("create game: unknown category '%s'", name)
+		}
+		rounds = append(rounds, cat.GetRounds(n)...)
+	}
+	max := len(rounds)
+	if max == 0 {
+		return fmt.Errorf("create game: too few question")
+	}
+
+	rand.Shuffle(max, func(i, j int) {
+		rounds[i], rounds[j] = rounds[j], rounds[i]
+	})
+
+	for i, r := range rounds {
+		r.Current = i + 1
+		r.Max = max
+	}
+
+	c.Game = &Game{
+		Rounds:  rounds,
+		Current: 1,
+	}
+
+	return nil
 }

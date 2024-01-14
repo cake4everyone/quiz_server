@@ -162,3 +162,103 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 	handleWebsocket(c)
 }
+
+func handleGame(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		err = c.NewGame(body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		return
+	case http.MethodGet:
+		if c.Game == nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		b, err := json.Marshal(c.Game.Summary)
+		if err != nil {
+			log.Printf("Failed to marshal game summary: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(b)
+		return
+	case http.MethodDelete:
+		c.Game = nil
+		return
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func getRound(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if c.Game == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	round := c.Game.Rounds[c.Game.Current-1]
+	round.Correct = 0 // censoring correct answer
+	b, err := json.Marshal(round)
+	if err != nil {
+		log.Printf("Failed to marshal current round: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(b)
+}
+
+func nextRound(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	round := c.Game.GetRoundSummary()
+	b, err := json.Marshal(round)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if c.Game.Current >= len(c.Game.Rounds) {
+		// if this is the last round send also game summary
+		bGame, err := json.Marshal(c.Game.Summary)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		c.Game = nil
+
+		bGame[0] = ','
+		b = append(b[:len(b)-1], bGame...)
+		w.Write(b)
+		return
+	}
+
+	c.Game.Current++
+	w.Write(b)
+}
