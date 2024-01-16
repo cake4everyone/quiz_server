@@ -21,6 +21,13 @@ type Connection struct {
 	token string
 }
 
+type wsVoteMessage struct {
+	Type     string `json:"type"`
+	Username string `json:"username"`
+	Vote     int    `json:"vote"`
+	Total    [4]int `json:"chat_vote_count"`
+}
+
 // AllConnections is a map of a token to connection for all currently active connections
 var AllConnections = make(map[string]*Connection)
 
@@ -64,7 +71,35 @@ func (c *Connection) Close() {
 }
 
 func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Twitch, channel string, source *twitchgo.User, msg string) {
-	log.Printf("[Twitch] <%s %s> %s", channel, source.Nickname, msg)
+	if c.WS == nil || c.Game == nil {
+		return
+	}
+
+	v := wsVoteMessage{
+		Type:     "CHAT_VOTE",
+		Username: source.Nickname,
+		Vote:     1,
+		Total:    c.Game.ChatVoteCount,
+	}
+
+	switch msg {
+	case "1", "a", "A":
+		c.Game.ChatVoteCount[0]++
+		v.Vote = 1
+		c.WS.WriteJSON(v)
+	case "2", "b", "B":
+		c.Game.ChatVoteCount[1]++
+		v.Vote = 2
+		c.WS.WriteJSON(v)
+	case "3", "c", "C":
+		c.Game.ChatVoteCount[2]++
+		v.Vote = 3
+		c.WS.WriteJSON(v)
+	case "4", "d", "D":
+		c.Game.ChatVoteCount[3]++
+		v.Vote = 4
+		c.WS.WriteJSON(v)
+	}
 }
 
 func (c *Connection) NewGame(data []byte) error {
