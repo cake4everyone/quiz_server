@@ -82,23 +82,28 @@ func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Twitch, channel string, 
 		Total:    c.Game.ChatVoteCount,
 	}
 
+	var err error
 	switch msg {
 	case "1", "a", "A":
 		c.Game.ChatVoteCount[0]++
 		v.Vote = 1
-		c.WS.WriteJSON(v)
+		err = c.WS.WriteJSON(v)
 	case "2", "b", "B":
 		c.Game.ChatVoteCount[1]++
 		v.Vote = 2
-		c.WS.WriteJSON(v)
+		err = c.WS.WriteJSON(v)
 	case "3", "c", "C":
 		c.Game.ChatVoteCount[2]++
 		v.Vote = 3
-		c.WS.WriteJSON(v)
+		err = c.WS.WriteJSON(v)
 	case "4", "d", "D":
 		c.Game.ChatVoteCount[3]++
 		v.Vote = 4
-		c.WS.WriteJSON(v)
+		err = c.WS.WriteJSON(v)
+	}
+
+	if err != nil {
+		log.Printf("Error writing chat vote to websocket: %v", err)
 	}
 }
 
