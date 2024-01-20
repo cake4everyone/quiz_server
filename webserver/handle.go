@@ -1,11 +1,15 @@
 package webserver
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net"
 	"net/http"
+	"quiz_backend/database"
 	"quiz_backend/quiz"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/kesuaheli/twitchgo"
@@ -55,37 +59,36 @@ func handleFetchQuestions(w http.ResponseWriter, r *http.Request) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Failed to read login body: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	auth := r.Header.Get("Authorization")
+	auth, ok := strings.CutPrefix(auth, "Basic ")
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-
-	var login struct {
-		Pass        string `json:"password"`
-		TwitchToken string `json:"twitch"`
-	}
-	err = json.Unmarshal(body, &login)
+	b, err := base64.StdEncoding.DecodeString(auth)
 	if err != nil {
-		log.Printf("Failed to parse login body: %v", err)
+		log.Printf("Failed to decode auth: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	pass := viper.GetString("webserver.password")
-	if login.Pass == "" || login.Pass != pass {
+	n := bytes.IndexByte(b, ':')
+	if n == -1 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user := database.GetUserByCredentials(string(b[:n]), string(b[n+1:]))
+	if user == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	if login.TwitchToken == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	log.Printf("logged in as %s", user.Username)
 
 	token := uuid.New().String()
-	c := quiz.New(token)
+	activeAuth[token] = user.ID
+	c := quiz.New(user.ID)
 	if c == nil {
 		log.Printf("Failed to create new quiz connection, but randomly generated uuid already exists: '%s'. Congrats to %s for drawing that uuid!", token, r.RemoteAddr)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -93,13 +96,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var loginResponse struct {
-		TwitchName string `json:"display_name"`
+		Username   string `json:"username"`
+		TwitchName string `json:"twitch"`
 		Token      string `json:"token"`
 	}
+	loginResponse.Username = user.Username
 	loginResponse.Token = token
 
 	// setting twitch connection
-	twitchBot := twitchgo.New("", login.TwitchToken)
+	twitchBot := twitchgo.New("", user.TwitchToken)
 
 	gotTwitch := make(chan struct{})
 	twitchBot.OnGlobalUserState(func(t *twitchgo.Twitch, userTags twitchgo.MessageTags) {
@@ -123,7 +128,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	twitchBot.OnChannelMessage(c.OnTwitchChannelMessage)
 	twitchBot.JoinChannel(loginResponse.TwitchName)
 
-	body, err = json.Marshal(loginResponse)
+	body, err := json.Marshal(loginResponse)
 	if err != nil {
 		log.Printf("Failed to marshal login response: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

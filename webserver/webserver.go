@@ -79,11 +79,18 @@ func handle404(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 }
 
+// activeAuth is a map from temporary tokens to a user id.
+var activeAuth = make(map[string]string)
+
 func isAuthorized(r *http.Request) (c *quiz.Connection, ok bool) {
 	token := r.Header.Get("Authorization")
 	token, found := strings.CutPrefix(token, "Q4E ")
 	if !found {
 		return nil, false
 	}
-	return quiz.GetConnectionByToken(token)
+	userID, found := activeAuth[token]
+	if !found {
+		return nil, false
+	}
+	return quiz.GetConnection(userID)
 }
