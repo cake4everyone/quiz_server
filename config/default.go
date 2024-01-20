@@ -23,4 +23,12 @@ webserver:
   # password is the very first thing a client must send in order to verify their connection. Must
   # not be an empty string.
   password: PleaseChange123
+  
+mysql:
+  user: user
+  password: password
+  # Host and port defaults to localhost:3306 when left out here
+  #host: localhost
+  #port: 3306
+  database: database
 `

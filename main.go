@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"quiz_backend/config"
+	"quiz_backend/database"
 	"quiz_backend/quiz"
 	"quiz_backend/webserver"
 	"syscall"
@@ -21,6 +22,8 @@ func init() {
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
 	defer cancel()
+
+	database.Connect()
 
 	err := quiz.FetchQuestions()
 	if err != nil {
