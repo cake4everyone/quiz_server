@@ -25,12 +25,12 @@ func FetchQuestions() (err error) {
 		return err
 	}
 
-	var questionCount, answerCount int
+	var questionCount, answerCountCorrect, answerCountWrong int
 	for _, cat := range Categories {
 		questionCount += len(cat.Pool)
 		for _, q := range cat.Pool {
-			answerCount += len(q.Correct)
-			answerCount += len(q.Wrong)
+			answerCountCorrect += len(q.Correct)
+			answerCountWrong += len(q.Wrong)
 		}
 		data, err := json.MarshalIndent(cat, "", "	")
 		if err != nil {
@@ -43,7 +43,7 @@ func FetchQuestions() (err error) {
 		}
 	}
 
-	log.Printf("Got %d quiz categories with a total of %d questions and %d answers", len(Categories), questionCount, answerCount)
+	log.Printf("Got %d quiz categories with a total of %d questions and %d correct and %d wrong answers (%d total) (%.3f%% correct)", len(Categories), questionCount, answerCountCorrect, answerCountWrong, answerCountCorrect+answerCountWrong, float64(answerCountCorrect)/float64(answerCountCorrect+answerCountWrong)*100)
 
 	return nil
 }
