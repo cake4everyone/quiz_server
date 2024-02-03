@@ -190,6 +190,22 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 	handleWebsocket(c)
 }
 
+func handleCategory(w http.ResponseWriter, r *http.Request) {
+	categories := make(map[string]int)
+	for _, cat := range quiz.Categories {
+		categories[cat.Title] = len(cat.Pool)
+	}
+
+	b, err := json.Marshal(categories)
+	if err != nil {
+		log.Printf("Failed to marshal categories: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(b)
+}
+
 func handleGame(w http.ResponseWriter, r *http.Request) {
 	c, ok := isAuthorized(r)
 	if !ok {
