@@ -84,23 +84,45 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("logged in as %s", user.Username)
-
-	token := uuid.New().String()
-	activeAuth[token] = user.ID
-	c := quiz.New(user.ID)
-	if c == nil {
-		log.Printf("Failed to create new quiz connection, but randomly generated uuid already exists: '%s'. Congrats to %s for drawing that uuid!", token, r.RemoteAddr)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	var loginResponse struct {
 		Username   string `json:"username"`
 		TwitchName string `json:"twitch"`
 		Token      string `json:"token"`
 	}
 	loginResponse.Username = user.Username
+
+	c := quiz.New(user.ID)
+	if c == nil {
+		// respond with token in activeAuths that matches user id
+		var token, id string
+		for token, id = range activeAuth {
+			if id == user.ID {
+				break
+			}
+		}
+		if token == "" {
+			log.Printf("ERROR: returned connection is nil")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("relogged in as %s", user.Username)
+		loginResponse.Token = token
+		body, err := json.Marshal(loginResponse)
+		if err != nil {
+			log.Printf("Failed to marshal login response: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			c.Close()
+			return
+		}
+		w.Write(body)
+		return
+	}
+
+	log.Printf("logged in as %s", user.Username)
+	token := uuid.New().String()
+	activeAuth[token] = user.ID
+
 	loginResponse.Token = token
 
 	// setting twitch connection
