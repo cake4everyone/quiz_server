@@ -280,6 +280,11 @@ func nextRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.Game == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	round := c.Game.GetRoundSummary()
 	b, err := json.Marshal(round)
 	if err != nil {
