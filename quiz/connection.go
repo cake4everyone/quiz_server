@@ -117,6 +117,10 @@ func (c *Connection) NewGame(data []byte) error {
 		return fmt.Errorf("create game: %v", err)
 	}
 
+	if gameData.RoundDuration > 0 {
+		return fmt.Errorf("create game: round_duration must not be negative, got %ds", gameData.RoundDuration)
+	}
+
 	var rounds []*Round
 	for name, n := range gameData.Categories {
 		cat := Categories.GetCategoryByName(name)
@@ -140,8 +144,10 @@ func (c *Connection) NewGame(data []byte) error {
 	}
 
 	c.Game = &Game{
-		Rounds:  rounds,
-		Current: 1,
+		connection:    c,
+		Rounds:        rounds,
+		Current:       1,
+		RoundDuration: time.Duration(gameData.RoundDuration) * time.Second,
 	}
 
 	return nil

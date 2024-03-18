@@ -3,11 +3,17 @@ package quiz
 import (
 	logger "log"
 	"math/rand"
+	"time"
 )
 
 type Game struct {
+	connection *Connection
+
 	Current       int
 	Rounds        []*Round
+	RoundDuration time.Duration
+	RoundTimer    *time.Timer
+
 	StreamerVote  int    `json:"streamer_vote"`
 	ChatVote      int    `json:"chat_vote"`
 	ChatVoteCount [4]int `json:"chat_vote_count"`
@@ -75,6 +81,33 @@ func (g Game) GetRoundSummary() RoundSummary {
 		ChatVote:       g.ChatVote,
 		ChatVoteCount:  g.ChatVoteCount,
 	}
+}
+
+// NextRound advances the game to the next round. That includes incrementing the counter and setting
+// a new round timer.
+func (g *Game) NextRound() {
+	g.Current++
+	g.RoundTimer = time.AfterFunc(g.RoundDuration, g.endRound)
+}
+
+func (g *Game) endRound() {
+	if g == nil || g.connection == nil {
+		return
+	}
+
+	if g.RoundTimer != nil && g.RoundTimer.Stop() {
+		// If the round timer was running, the call to Stop will run this function again. To prevent
+		// duplicates we exit here.
+		return
+	}
+	g.RoundTimer = nil
+
+	if g.connection.WS == nil {
+		log.Println("tried to end round, but no websocket is not connected")
+		return
+	}
+
+	g.connection.WS.WriteJSON(g.GetRoundSummary())
 }
 
 // GetRounds tries to get n questions from c. If c contains less than n questions, GetRounds returns

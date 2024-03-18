@@ -222,7 +222,7 @@ func handleGame(w http.ResponseWriter, r *http.Request) {
 		}
 		err = c.NewGame(body)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
@@ -285,28 +285,25 @@ func nextRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	round := c.Game.GetRoundSummary()
-	b, err := json.Marshal(round)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	if c.Game.Current >= len(c.Game.Rounds) {
-		// if this is the last round send also game summary
-		bGame, err := json.Marshal(c.Game.Summary)
+		// if this is the last round send game summary
+		b, err := json.Marshal(c.Game.Summary)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		c.Game = nil
-
-		bGame[0] = ','
-		b = append(b[:len(b)-1], bGame...)
 		w.Write(b)
 		return
 	}
 
-	c.Game.Current++
+	c.Game.NextRound()
+
+	round := c.Game.Rounds[c.Game.Current-1]
+	b, err := json.Marshal(round)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Write(b)
 }
