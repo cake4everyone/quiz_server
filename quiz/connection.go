@@ -117,7 +117,7 @@ func (c *Connection) NewGame(data []byte) error {
 		return fmt.Errorf("create game: %v", err)
 	}
 
-	if gameData.RoundDuration > 0 {
+	if gameData.RoundDuration <= 0 {
 		return fmt.Errorf("create game: round_duration must not be negative, got %ds", gameData.RoundDuration)
 	}
 
