@@ -70,6 +70,7 @@ func initHandler() http.Handler {
 	r.HandleFunc("/category", handleCategory).Methods(http.MethodGet)
 
 	r.HandleFunc("/game", handleGame)
+	r.HandleFunc("/vote/streamer", handleStreamerVote).Methods(http.MethodPost)
 	r.HandleFunc("/round", getRound).Methods(http.MethodGet)
 	r.HandleFunc("/round/next", nextRound).Methods(http.MethodPost)
 

@@ -47,3 +47,40 @@ func FetchQuestions() (err error) {
 
 	return nil
 }
+
+// MsgToVote checks if msg is a valid vote for an answer. It returns the number of the voted answer
+// (indexed 1). If msg isn't valid for a vote MsgToVote returns 0.
+//
+// If g is nil or the current round g is pointing to is nil all possible votes are valid. With g
+// containing a non-nil round MsgToVote will get the maximum vote and invalidates all votes above,
+// e.g., the current question has 2 answers but msg is a valid vote for answer 3, MsgToVote will
+// return 0, because 3 is not a valid choice at this point.
+func MsgToVote(msg string, g *Game) int {
+	var vote int
+	switch msg {
+	case "1", "a", "A":
+		vote = 1
+	case "2", "b", "B":
+		vote = 2
+	case "3", "c", "C":
+		vote = 3
+	case "4", "d", "D":
+		vote = 4
+	default:
+		return 0
+	}
+
+	if g == nil {
+		return vote
+	}
+	if g.Current > len(g.Rounds) {
+		return 0
+	}
+	if g.Rounds[g.Current] == nil {
+		return vote
+	}
+	if vote > len(g.Rounds[g.Current].Answers) {
+		return 0
+	}
+	return vote
+}

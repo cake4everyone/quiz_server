@@ -249,6 +249,42 @@ func handleGame(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleStreamerVote(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if c.Game == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Failed to read request body: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var streamerVoteData struct {
+		Vote string `json:"vote"`
+	}
+	err = json.Unmarshal(body, &streamerVoteData)
+	if err != nil || streamerVoteData.Vote == "" {
+		http.Error(w, "Not a valid json body. Need key 'vote'", http.StatusBadRequest)
+		return
+	}
+
+	c.Game.StreamerVote = quiz.MsgToVote(streamerVoteData.Vote, c.Game)
+	if c.Game.StreamerVote == 0 {
+		http.Error(w, streamerVoteData.Vote+" is not a valid vote option", http.StatusBadRequest)
+		return
+	}
+
+}
+
 func getRound(w http.ResponseWriter, r *http.Request) {
 	c, ok := isAuthorized(r)
 	if !ok {
