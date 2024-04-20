@@ -126,10 +126,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 	loginResponse.Token = token
 
 	// setting twitch connection
-	twitchBot := twitchgo.New("", user.TwitchToken)
+	twitchBot := twitchgo.NewIRCOnly(user.TwitchToken)
 
 	gotTwitch := make(chan struct{})
-	twitchBot.OnGlobalUserState(func(t *twitchgo.Twitch, userTags twitchgo.MessageTags) {
+	twitchBot.OnGlobalUserState(func(t *twitchgo.Session, userTags twitchgo.IRCMessageTags) {
 		loginResponse.TwitchName = userTags.DisplayName
 		close(gotTwitch)
 		t.SendMessage(userTags.DisplayName, "Welcome to Quiz4Everyone!")

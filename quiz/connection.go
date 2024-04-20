@@ -12,7 +12,7 @@ import (
 
 // Connection represents a connection to a logged in player
 type Connection struct {
-	Twitch *twitchgo.Twitch
+	Twitch *twitchgo.Session
 	WS     *websocket.Conn
 
 	started time.Time
@@ -70,7 +70,7 @@ func (c *Connection) Close() {
 	}
 }
 
-func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Twitch, channel string, source *twitchgo.User, msg string) {
+func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg string) {
 	if c.WS == nil || c.Game == nil {
 		return
 	}
