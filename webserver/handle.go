@@ -5,14 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"quiz_backend/database"
 	"quiz_backend/quiz"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/kesuaheli/twitchgo"
 	"github.com/spf13/viper"
 )
 
@@ -125,30 +123,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	loginResponse.Token = token
 
-	// setting twitch connection
-	twitchBot := twitchgo.NewIRCOnly(user.TwitchToken)
-
-	gotTwitch := make(chan struct{})
-	twitchBot.OnGlobalUserState(func(t *twitchgo.Session, userTags twitchgo.IRCMessageTags) {
-		loginResponse.TwitchName = userTags.DisplayName
-		close(gotTwitch)
-		t.SendMessage(userTags.DisplayName, "Welcome to Quiz4Everyone!")
-	})
-
-	err = twitchBot.Connect()
-	if err != nil {
-		if opErr, ok := err.(*net.OpError); ok {
-			err = opErr.Unwrap()
-		}
-		log.Printf("Failed to connect to twitch: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	<-gotTwitch
-	c.Twitch = twitchBot
-	twitchBot.OnChannelMessage(c.OnTwitchChannelMessage)
-	twitchBot.JoinChannel(loginResponse.TwitchName)
+	//TODO: get real channel name from api token
+	c.JoinTwitchChannel(user.Username)
 
 	body, err := json.Marshal(loginResponse)
 	if err != nil {
@@ -181,7 +157,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	wsConn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade to websocket communication")
+		log.Printf("Failed to upgrade to websocket communication: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

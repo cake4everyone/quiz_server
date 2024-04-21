@@ -70,7 +70,7 @@ func (c *Connection) Close() {
 	}
 }
 
-func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg string) {
+func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchgo.IRCUser, msg string) {
 	if c.WS == nil || c.Game == nil {
 		return
 	}

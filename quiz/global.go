@@ -3,13 +3,20 @@ package quiz
 import (
 	"encoding/json"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/kesuaheli/twitchgo"
 	"github.com/spf13/viper"
 )
 
 var (
 	lastFetch time.Time
+
+	TwitchIRC      *twitchgo.Session
+	joinedChannels map[string]*Connection = make(map[string]*Connection)
+	channelMapMu   sync.RWMutex
 )
 
 func FetchQuestions() (err error) {
@@ -83,4 +90,28 @@ func MsgToVote(msg string, g *Game) int {
 		return 0
 	}
 	return vote
+}
+
+func (c *Connection) JoinTwitchChannel(channel string) {
+	channelMapMu.Lock()
+	defer channelMapMu.Unlock()
+	if old, ok := joinedChannels[channel]; ok {
+		log.Printf("Tried to join a connection (uID: %s) with a already connected Twitch channel (%s). Overriding it with uID: %s", old.userID, channel, c.userID)
+	}
+
+	TwitchIRC.JoinChannel(channel)
+	joinedChannels[channel] = c
+}
+
+func OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg string) {
+	channelMapMu.RLock()
+	defer channelMapMu.RUnlock()
+	channel, _ = strings.CutPrefix(channel, "#")
+
+	c, ok := joinedChannels[channel]
+	if !ok {
+		TwitchIRC.LeaveChannel(channel)
+		return
+	}
+	c.OnTwitchChannelMessage(t, source, msg)
 }
