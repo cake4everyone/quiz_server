@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/kesuaheli/twitchgo"
 	"github.com/spf13/viper"
 )
 
@@ -123,8 +124,19 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	loginResponse.Token = token
 
-	//TODO: get real channel name from api token
-	c.JoinTwitchChannel(user.Username)
+	c.Twitch = twitchgo.NewAPIOnly(
+		viper.GetString("twitch.client_id"),
+		viper.GetString("twitch.client_secret"),
+	).SetAuthRefreshToken(
+		user.TwitchToken,
+	)
+	tUser, err := c.Twitch.GetUser()
+	if err != nil {
+		log.Printf("GetUser error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	c.JoinTwitchChannel(tUser.Login)
 
 	body, err := json.Marshal(loginResponse)
 	if err != nil {
