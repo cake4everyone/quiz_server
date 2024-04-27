@@ -110,7 +110,14 @@ func (g *Game) endRound() {
 		return
 	}
 
-	g.connection.WS.WriteJSON(g.GetRoundSummary())
+	roundSummary := struct {
+		Type string `json:"type"`
+		RoundSummary
+	}{
+		Type:         "ROUND_END",
+		RoundSummary: g.GetRoundSummary(),
+	}
+	g.connection.WS.WriteJSON(roundSummary)
 }
 
 // GetRounds tries to get n questions from c. If c contains less than n questions, GetRounds returns

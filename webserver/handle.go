@@ -290,7 +290,7 @@ func getRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	round := c.Game.Rounds[c.Game.Current-1]
+	round := *c.Game.Rounds[c.Game.Current-1]
 	round.Correct = 0 // censoring correct answer
 	b, err := json.Marshal(round)
 	if err != nil {
@@ -328,7 +328,7 @@ func nextRound(w http.ResponseWriter, r *http.Request) {
 
 	c.Game.NextRound()
 
-	round := c.Game.Rounds[c.Game.Current-1]
+	round := *c.Game.Rounds[c.Game.Current-1]
 	round.Correct = 0 // censoring correct answer
 	b, err := json.Marshal(round)
 	if err != nil {
