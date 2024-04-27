@@ -80,13 +80,13 @@ func MsgToVote(msg string, g *Game) int {
 	if g == nil {
 		return vote
 	}
-	if g.Current > len(g.Rounds) {
+	if g.Current == 0 || g.Current > len(g.Rounds) {
 		return 0
 	}
-	if g.Rounds[g.Current] == nil {
+	if g.Rounds[g.Current-1] == nil {
 		return vote
 	}
-	if vote > len(g.Rounds[g.Current].Answers) {
+	if vote > len(g.Rounds[g.Current-1].Answers) {
 		return 0
 	}
 	return vote
