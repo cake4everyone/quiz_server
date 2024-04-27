@@ -285,6 +285,11 @@ func getRound(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.Game.Current == 0 {
+		http.Error(w, "no active round", http.StatusNotFound)
+		return
+	}
+
 	round := c.Game.Rounds[c.Game.Current-1]
 	round.Correct = 0 // censoring correct answer
 	b, err := json.Marshal(round)
@@ -324,6 +329,7 @@ func nextRound(w http.ResponseWriter, r *http.Request) {
 	c.Game.NextRound()
 
 	round := c.Game.Rounds[c.Game.Current-1]
+	round.Correct = 0 // censoring correct answer
 	b, err := json.Marshal(round)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

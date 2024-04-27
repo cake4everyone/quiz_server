@@ -134,7 +134,6 @@ func (c *Connection) NewGame(data []byte) error {
 	c.Game = &Game{
 		connection:    c,
 		Rounds:        rounds,
-		Current:       1,
 		RoundDuration: time.Duration(gameData.RoundDuration) * time.Second,
 	}
 

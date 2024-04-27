@@ -73,14 +73,17 @@ func (cs categoriesSlice) GetCategoryByName(name string) Category {
 }
 
 func (g Game) GetRoundSummary() RoundSummary {
-	return RoundSummary{
-		Round:          g.Rounds[g.Current-1],
+	sum := RoundSummary{
 		StreamerPoints: g.Summary.StreamerPoints,
 		StreamerVote:   g.StreamerVote,
 		ChatPoints:     g.Summary.ChatPoints,
 		ChatVote:       g.ChatVote,
 		ChatVoteCount:  g.ChatVoteCount,
 	}
+	if g.Current > 0 {
+		sum.Round = g.Rounds[g.Current-1]
+	}
+	return sum
 }
 
 // NextRound advances the game to the next round. That includes incrementing the counter and setting
