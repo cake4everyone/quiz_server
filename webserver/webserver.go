@@ -78,8 +78,9 @@ func initHandler() http.Handler {
 }
 
 func handle404(w http.ResponseWriter, r *http.Request) {
-	log.Printf("404: %s", r.RequestURI)
-	w.WriteHeader(404)
+	log.Printf("404: [%s] %s %s", r.Header.Get("X-Forwarded-For"), r.Method, r.RequestURI)
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(fmt.Sprintf("cant find %s", r.RequestURI)))
 }
 
 // activeAuth is a map from temporary tokens to a user id.
