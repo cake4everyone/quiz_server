@@ -18,7 +18,7 @@ type Game struct {
 	ChatVote      int             `json:"chat_vote"`
 	ChatVoteCount [4]int          `json:"chat_vote_count"`
 	voteHistory   map[string]bool `json:"-"`
-	Summary       GameSummary
+	Summary       *GameSummary
 }
 
 type GameSummary struct {
@@ -109,6 +109,27 @@ func (g *Game) endRound() {
 	}
 	g.RoundTimer = nil
 
+	// determine winner
+	correct := g.Rounds[g.Current-1].Correct
+	const roundPoints = 5
+
+	if g.StreamerVote == correct {
+		g.Summary.StreamerPoints += roundPoints
+		g.Summary.StreamerWon++
+	}
+	chatCorrect := g.ChatVoteCount[correct-1]
+	g.ChatVote = correct
+	for i, votes := range g.ChatVoteCount {
+		if votes > chatCorrect {
+			g.ChatVote = i + 1
+		}
+	}
+	if g.ChatVote == correct {
+		g.Summary.ChatPoints += roundPoints
+		g.Summary.ChatWon++
+	}
+
+	// send to ws
 	if g.connection.WS == nil {
 		log.Println("tried to end round, but no websocket is not connected")
 		return
