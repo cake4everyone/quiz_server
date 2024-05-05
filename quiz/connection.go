@@ -24,8 +24,6 @@ type Connection struct {
 type wsVoteMessage struct {
 	Type     string `json:"type"`
 	Username string `json:"username"`
-	Vote     int    `json:"vote"`
-	Total    [4]int `json:"chat_vote_count"`
 }
 
 // AllConnections is a map of a user id to connection for all currently active connections
@@ -80,13 +78,16 @@ func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchg
 		// ignoring non-valid votes
 		return
 	}
+	if _, ok := c.Game.voteHistory[source.Nickname]; ok {
+		// ignore users who already voted
+		return
+	}
+	c.Game.voteHistory[source.Nickname] = true
 	c.Game.ChatVoteCount[vote-1]++
 
 	v := wsVoteMessage{
 		Type:     "CHAT_VOTE",
 		Username: source.Nickname,
-		Vote:     vote,
-		Total:    c.Game.ChatVoteCount,
 	}
 
 	err := c.WS.WriteJSON(v)
@@ -135,6 +136,7 @@ func (c *Connection) NewGame(data []byte) error {
 		connection:    c,
 		Rounds:        rounds,
 		RoundDuration: time.Duration(gameData.RoundDuration) * time.Second,
+		voteHistory:   make(map[string]bool),
 	}
 
 	return nil

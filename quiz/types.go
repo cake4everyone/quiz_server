@@ -14,9 +14,10 @@ type Game struct {
 	RoundDuration time.Duration
 	RoundTimer    *time.Timer
 
-	StreamerVote  int    `json:"streamer_vote"`
-	ChatVote      int    `json:"chat_vote"`
-	ChatVoteCount [4]int `json:"chat_vote_count"`
+	StreamerVote  int             `json:"streamer_vote"`
+	ChatVote      int             `json:"chat_vote"`
+	ChatVoteCount [4]int          `json:"chat_vote_count"`
+	voteHistory   map[string]bool `json:"-"`
 	Summary       GameSummary
 }
 
@@ -90,6 +91,9 @@ func (g Game) GetRoundSummary() RoundSummary {
 // a new round timer.
 func (g *Game) NextRound() {
 	g.Current++
+	g.StreamerVote = 0
+	g.voteHistory = make(map[string]bool)
+	g.ChatVoteCount = [4]int{}
 	g.RoundTimer = time.AfterFunc(g.RoundDuration, g.endRound)
 }
 
