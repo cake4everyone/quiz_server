@@ -136,6 +136,7 @@ func (c *Connection) NewGame(data []byte) error {
 		connection:    c,
 		Rounds:        rounds,
 		RoundDuration: time.Duration(gameData.RoundDuration) * time.Second,
+		Summary:       &GameSummary{},
 		voteHistory:   make(map[string]bool),
 	}
 
