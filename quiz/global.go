@@ -103,6 +103,15 @@ func (c *Connection) JoinTwitchChannel(channel string) {
 	joinedChannels[channel] = c
 }
 
+// LeaveTwitchChannel leaves the twitch channel for the corresponding connection.
+func (c *Connection) LeaveTwitchChannel() {
+	for channel, connection := range joinedChannels {
+		if connection == c {
+			delete(joinedChannels, channel)
+		}
+	}
+}
+
 func OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg string) {
 	channelMapMu.RLock()
 	defer channelMapMu.RUnlock()

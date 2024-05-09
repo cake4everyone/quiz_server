@@ -170,7 +170,6 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 	wsConn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade to websocket communication: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	c.WS = wsConn

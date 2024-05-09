@@ -12,8 +12,9 @@ import (
 
 // Connection represents a connection to a logged in player
 type Connection struct {
-	Twitch *twitchgo.Session
-	WS     *websocket.Conn
+	Twitch       *twitchgo.Session
+	WS           *websocket.Conn
+	lastResponse time.Time
 
 	started time.Time
 	Game    *Game
@@ -54,17 +55,33 @@ func GetConnection(userID string) (*Connection, bool) {
 	return c, ok
 }
 
+// SetLastResponse saves the current timestamp which can be reobtained as [time.Duration] by
+// [c.GetLastResponse].
+func (c *Connection) SetLastResponse() {
+	c.lastResponse = time.Now()
+}
+
+// GetLastResponse returns the [time.Duration] since the last timestamp saved by
+// [c.SetLastResponse].
+func (c *Connection) GetLastResponse() time.Duration {
+	return time.Since(c.lastResponse)
+}
+
 // Close is a graceful termination of the quiz connection to a player
 func (c *Connection) Close() {
 	delete(AllConnections, c.userID)
 
 	if c.Twitch != nil {
+		c.LeaveTwitchChannel()
 		c.Twitch.Close()
 		c.Twitch = nil
 	}
 	if c.WS != nil {
 		c.WS.Close()
 		c.WS = nil
+	}
+	if c.Game != nil && c.Game.RoundTimer != nil {
+		c.Game.RoundTimer.Stop()
 	}
 }
 

@@ -119,14 +119,18 @@ func (g *Game) endRound() {
 	}
 	chatCorrect := g.ChatVoteCount[correct-1]
 	g.ChatVote = correct
+	var totalVotes int
 	for i, votes := range g.ChatVoteCount {
+		totalVotes += votes
 		if votes > chatCorrect {
 			g.ChatVote = i + 1
 		}
 	}
-	if g.ChatVote == correct {
+	if totalVotes > 0 && g.ChatVote == correct {
 		g.Summary.ChatPoints += roundPoints
 		g.Summary.ChatWon++
+	} else if totalVotes == 0 {
+		g.ChatVote = 0
 	}
 
 	// send to ws
