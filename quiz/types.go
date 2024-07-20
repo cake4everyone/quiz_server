@@ -28,6 +28,13 @@ type GameSummary struct {
 	ChatWon        int `json:"chat_won"`
 }
 
+type CategoryGroup struct {
+	Title      string     `json:"title"`
+	IsDev      bool       `json:"-"`
+	IsRelease  bool       `json:"-"`
+	Categories []Category `json:"categories"`
+}
+
 type Category struct {
 	Title       string      `json:"-"`
 	Description string      `json:"description"`
@@ -57,17 +64,19 @@ type RoundSummary struct {
 	ChatVoteCount  [4]int `json:"chat_vote_count"`
 }
 
-type categoriesSlice []Category
+type categoryGroups map[int]CategoryGroup
 
-// Categories is the main list of all Categories and Categories
-var Categories categoriesSlice
+// Categories is the main list of all Categories and Groups
+var Categories categoryGroups
 
 var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
 
-func (cs categoriesSlice) GetCategoryByName(name string) Category {
-	for _, c := range cs {
-		if c.Title == name {
-			return c
+func (cg categoryGroups) GetCategoryByName(name string) Category {
+	for _, group := range cg {
+		for _, c := range group.Categories {
+			if c.Title == name {
+				return c
+			}
 		}
 	}
 	return Category{}

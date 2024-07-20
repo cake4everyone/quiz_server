@@ -2,28 +2,65 @@ package quiz
 
 import (
 	"fmt"
+	"math"
 	"quiz_backend/google"
 
 	"google.golang.org/api/sheets/v4"
 )
 
-func ParseFromGoogleSheets(ID string) (categories []Category, err error) {
+func ParseFromGoogleSheets(ID string) (categories map[int]CategoryGroup, err error) {
 	sheets, err := google.GetQuizFromSpreadsheet(ID)
 	if err != nil {
 		return nil, err
 	}
 
+	categories = make(map[int]CategoryGroup)
 	for _, s := range sheets {
 		if len(s.Data) == 0 {
 			continue
 		}
+		if s.Properties.Title == "categories" {
+			parseCategoryGroups(s, categories)
+			continue
+		}
 
 		category := parseSheet(s)
-		if len(category.Pool) > 0 {
-			categories = append(categories, category)
+		if len(category.Pool) == 0 {
+			continue
 		}
+		hexColor := intFromColor(s.Properties.TabColorStyle.RgbColor)
+		categoryGroup := categories[hexColor]
+		categoryGroup.Categories = append(categoryGroup.Categories, category)
+		categories[hexColor] = categoryGroup
 	}
 	return categories, nil
+}
+
+func parseCategoryGroups(s *sheets.Sheet, categories map[int]CategoryGroup) {
+	for rowNum, row := range s.Data[0].RowData {
+		if rowNum <= 1 {
+			continue
+		}
+		if len(row.Values) < 4 {
+			log.Printf("Warn: could not category group from row %d: too few values", rowNum)
+			continue
+		}
+		if row.Values[1].FormattedValue == "" {
+			continue
+		}
+		color, err := getColorFromCell(row.Values[0])
+		if err != nil {
+			log.Printf("Warn: could not category group from row %d: %v", rowNum, err)
+			continue
+		}
+
+		hexColor := intFromColor(color)
+		categoryGroup := categories[hexColor]
+		categoryGroup.Title = row.Values[1].FormattedValue
+		categoryGroup.IsDev = row.Values[2].FormattedValue == "TRUE"
+		categoryGroup.IsRelease = row.Values[3].FormattedValue == "TRUE"
+		categories[hexColor] = categoryGroup
+	}
 }
 
 func parseSheet(s *sheets.Sheet) Category {
@@ -66,28 +103,9 @@ func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
 			continue
 		}
 
-		var (
-			color   *sheets.Color
-			cFormat *sheets.CellFormat
-		)
-		// check formatting and color
-		if cell.EffectiveFormat != nil {
-			cFormat = cell.EffectiveFormat
-		} else {
-			cFormat = cell.UserEnteredFormat
-		}
-		if cFormat == nil {
-			log.Printf("Warn: no format set in 'question '%s' answer %d ('%s')", qq.Question, cellNum, cell.FormattedValue)
-			continue
-		}
-
-		if cFormat.BackgroundColorStyle != nil {
-			color = cFormat.BackgroundColorStyle.RgbColor
-		} else {
-			color = cFormat.BackgroundColor
-		}
-		if color == nil {
-			log.Printf("Warn: no color set in 'question '%s' answer %d ('%s')", qq.Question, cellNum, cell.FormattedValue)
+		color, err := getColorFromCell(cell)
+		if err != nil {
+			log.Printf("Warn: in 'question '%s' answer %d ('%s'): %v", qq.Question, cellNum, cell.FormattedValue, err)
 			continue
 		}
 
@@ -113,4 +131,44 @@ func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
 	}
 
 	return qq, nil
+}
+
+func getColorFromCell(cell *sheets.CellData) (color *sheets.Color, err error) {
+	var format *sheets.CellFormat
+	if cell.EffectiveFormat != nil {
+		format = cell.EffectiveFormat
+	} else {
+		format = cell.UserEnteredFormat
+	}
+	if format == nil {
+		return nil, fmt.Errorf("no format set")
+	}
+
+	if format.BackgroundColorStyle != nil {
+		color = format.BackgroundColorStyle.RgbColor
+	} else {
+		color = format.BackgroundColor
+	}
+	if color == nil {
+		return nil, fmt.Errorf("no color set")
+	}
+	return color, nil
+}
+
+// hexFromColor returns the RGBA color in a hex format in lowercase letters (0xrrggbbaa)
+func hexFromColor(color *sheets.Color) string {
+	return fmt.Sprintf("0x%02x%02x%02x%02x",
+		uint8(math.Ceil(color.Red*255)),
+		uint8(math.Ceil(color.Green*255)),
+		uint8(math.Ceil(color.Blue*255)),
+		uint8(math.Ceil(color.Alpha*255)),
+	)
+}
+
+// intFromColor returns the RGBA color as an integer.
+func intFromColor(color *sheets.Color) int {
+	return int(math.Ceil(color.Red*255))&0xFF<<24 |
+		int(math.Ceil(color.Green*255))&0xFF<<16 |
+		int(math.Ceil(color.Blue*255))&0xFF<<8 |
+		int(math.Ceil(color.Alpha*255))&0xFF
 }

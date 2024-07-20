@@ -179,8 +179,10 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 func handleCategory(w http.ResponseWriter, r *http.Request) {
 	categories := make(map[string]int)
-	for _, cat := range quiz.Categories {
-		categories[cat.Title] = len(cat.Pool)
+	for _, group := range quiz.Categories {
+		for _, cat := range group.Categories {
+			categories[cat.Title] = len(cat.Pool)
+		}
 	}
 
 	b, err := json.Marshal(categories)

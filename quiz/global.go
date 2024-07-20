@@ -2,6 +2,7 @@ package quiz
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"sync"
@@ -32,25 +33,36 @@ func FetchQuestions() (err error) {
 		return err
 	}
 
-	var questionCount, answerCountCorrect, answerCountWrong int
-	for _, cat := range Categories {
-		questionCount += len(cat.Pool)
-		for _, q := range cat.Pool {
-			answerCountCorrect += len(q.Correct)
-			answerCountWrong += len(q.Wrong)
-		}
-		data, err := json.MarshalIndent(cat, "", "	")
-		if err != nil {
-			log.Printf("Error marshaling category '%s': %v", cat.Title, err)
-			continue
-		}
-		err = os.WriteFile("sheets/"+cat.Title+".json", data, 0644)
-		if err != nil {
-			log.Printf("Error writing json file of category '%s': %v", cat.Title, err)
+	var categoryCount, questionCount, answerCountCorrect, answerCountWrong int
+	for _, group := range Categories {
+		categoryCount += len(group.Categories)
+		for _, cat := range group.Categories {
+			questionCount += len(cat.Pool)
+			for _, q := range cat.Pool {
+				answerCountCorrect += len(q.Correct)
+				answerCountWrong += len(q.Wrong)
+			}
+			var data []byte
+			data, err = json.MarshalIndent(cat, "", "	")
+			if err != nil {
+				log.Printf("Error marshaling category '%s': %v", cat.Title, err)
+				continue
+			}
+			err = os.Mkdir("sheets/"+group.Title, os.ModeDir)
+			if err != nil {
+				if !errors.Is(err, os.ErrExist) {
+					log.Printf("Error creting json file of category '%s/%s': %v", group.Title, cat.Title, err)
+					continue
+				}
+			}
+			err = os.WriteFile("sheets/"+group.Title+"/"+cat.Title+".json", data, 0644)
+			if err != nil {
+				log.Printf("Error writing json file of category '%s/%s': %v", group.Title, cat.Title, err)
+			}
 		}
 	}
 
-	log.Printf("Got %d quiz categories with a total of %d questions and %d correct and %d wrong answers (%d total) (%.3f%% correct)", len(Categories), questionCount, answerCountCorrect, answerCountWrong, answerCountCorrect+answerCountWrong, float64(answerCountCorrect)/float64(answerCountCorrect+answerCountWrong)*100)
+	log.Printf("Got %d quiz categories in %d groups with a total of %d questions and %d correct and %d wrong answers (%d total) (%.3f%% correct)", categoryCount, len(Categories), questionCount, answerCountCorrect, answerCountWrong, answerCountCorrect+answerCountWrong, float64(answerCountCorrect)/float64(answerCountCorrect+answerCountWrong)*100)
 
 	return nil
 }
