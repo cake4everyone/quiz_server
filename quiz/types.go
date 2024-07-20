@@ -42,10 +42,23 @@ type Category struct {
 }
 
 type Question struct {
-	Question string   `json:"question"`
-	Correct  []string `json:"correct"`
-	Wrong    []string `json:"wrong"`
+	Question DisplayableContent   `json:"question"`
+	Correct  []DisplayableContent `json:"correct"`
+	Wrong    []DisplayableContent `json:"wrong"`
 }
+
+type DisplayableContent struct {
+	Type ContentType
+	Text string
+}
+
+type ContentType uint8
+
+const (
+	CONTENTTEXT ContentType = iota
+	CONTENTIMAGE
+)
+
 type Round struct {
 	Question string   `json:"question"`
 	Answers  []string `json:"answers"`
@@ -198,9 +211,9 @@ func (q Question) ToRound() Round {
 		rand.Shuffle(len(q.Correct), func(i, j int) {
 			q.Correct[i], q.Correct[j] = q.Correct[j], q.Correct[i]
 		})
-		answers = append(answers, q.Correct[rand.Intn(len(q.Correct)-1)])
+		answers = append(answers, q.Correct[rand.Intn(len(q.Correct)-1)].Text)
 	} else {
-		answers = append(answers, q.Correct[0])
+		answers = append(answers, q.Correct[0].Text)
 	}
 
 	// select up to 3 wrong answers
@@ -208,9 +221,9 @@ func (q Question) ToRound() Round {
 		rand.Shuffle(len(q.Wrong), func(i, j int) {
 			q.Wrong[i], q.Wrong[j] = q.Wrong[j], q.Wrong[i]
 		})
-		answers = append(answers, q.Wrong[:3]...)
-	} else {
-		answers = append(answers, q.Wrong...)
+	}
+	for _, a := range q.Wrong[:3] {
+		answers = append(answers, a.Text)
 	}
 
 	var correct int
@@ -222,7 +235,7 @@ func (q Question) ToRound() Round {
 	})
 
 	return Round{
-		Question: q.Question,
+		Question: q.Question.Text,
 		Answers:  answers,
 		Correct:  correct + 1,
 	}

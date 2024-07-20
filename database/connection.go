@@ -68,7 +68,7 @@ func Connect() {
 		log.Fatalf("Could not ping database: %v", err)
 	}
 
-	log.Printf("Connected to database %s@%s:%d/%s\n", config.User, config.Host, config.Port, config.Database)
+	log.Printf("Connected to database %s@%s:%d/%s", config.User, config.Host, config.Port, config.Database)
 }
 
 // Close closes the database and prevents new queries from starting.

@@ -1,18 +1,33 @@
 package quiz
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"quiz_backend/google"
+	"regexp"
 
 	"google.golang.org/api/sheets/v4"
 )
+
+var spreadsheetFormulaRegex *regexp.Regexp
+
+func init() {
+	var err error
+	spreadsheetFormulaRegex, err = regexp.Compile("^=([A-Z]+)\\((.*)\\)$")
+	if err != nil {
+		panic("failed to compile spreadsheet formula regex: " + err.Error())
+	}
+}
 
 func ParseFromGoogleSheets(ID string) (categories map[int]CategoryGroup, err error) {
 	sheets, err := google.GetQuizFromSpreadsheet(ID)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Parsing %d Spreadsheets from Google", len(sheets))
 
 	categories = make(map[int]CategoryGroup)
 	for _, s := range sheets {
@@ -93,31 +108,35 @@ func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
 	qq = &Question{}
 	for cellNum, cell := range row.Values {
 		// skip empty cells
-		if cell == nil || cell.FormattedValue == "" {
+		if cell == nil {
+			continue
+		}
+		cellContent := getContentFromCell(cell)
+		if cellContent == (DisplayableContent{}) {
 			continue
 		}
 
 		// only read contents of the first cell and save it as the question
 		if cellNum == 0 {
-			qq.Question = cell.FormattedValue
+			qq.Question = cellContent
 			continue
 		}
 
 		color, err := getColorFromCell(cell)
 		if err != nil {
-			log.Printf("Warn: in 'question '%s' answer %d ('%s'): %v", qq.Question, cellNum, cell.FormattedValue, err)
+			log.Printf("Warn: in question (type: %d) '%s' answer %d ('%s'): %v", qq.Question.Type, qq.Question.Text, cellNum, cell.FormattedValue, err)
 			continue
 		}
 
 		if color.Green > color.Red {
-			qq.Correct = append(qq.Correct, cell.FormattedValue)
+			qq.Correct = append(qq.Correct, cellContent)
 		} else {
-			qq.Wrong = append(qq.Wrong, cell.FormattedValue)
+			qq.Wrong = append(qq.Wrong, cellContent)
 		}
 	}
 
 	// validation
-	if qq.Question == "" {
+	if qq.Question == (DisplayableContent{}) {
 		if len(qq.Correct) == 0 && len(qq.Wrong) == 0 {
 			return nil, nil
 		}
@@ -171,4 +190,48 @@ func intFromColor(color *sheets.Color) int {
 		int(math.Ceil(color.Green*255))&0xFF<<16 |
 		int(math.Ceil(color.Blue*255))&0xFF<<8 |
 		int(math.Ceil(color.Alpha*255))&0xFF
+}
+
+func getContentFromCell(cell *sheets.CellData) (content DisplayableContent) {
+	if cell.FormattedValue != "" {
+		content.Text = cell.FormattedValue
+		return
+	}
+	if cell.UserEnteredValue == nil || cell.UserEnteredValue.FormulaValue == nil || *cell.UserEnteredValue.FormulaValue == "" {
+		return
+	}
+	formulaFound := spreadsheetFormulaRegex.FindStringSubmatch(*cell.UserEnteredValue.FormulaValue)
+	if formulaFound == nil {
+		return
+	}
+	return parseCellFormula(formulaFound[1], formulaFound[2])
+}
+
+func parseCellFormula(formula, parameter string) (content DisplayableContent) {
+	switch formula {
+	case "IMAGE":
+		content.Type = CONTENTIMAGE
+		var url string
+		err := json.Unmarshal([]byte(parameter), &url)
+		if err != nil {
+			log.Printf("Error: parse image url: %v", err)
+			return
+		}
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Printf("Error: get image from url '%s': %v", url, err)
+			return
+		}
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("Error: reading image response: %v", err)
+			return
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			log.Printf("Error: could not get image from url: got '%s': %s", resp.Status, string(data))
+			return
+		}
+		content.Text = string(data)
+	}
+	return
 }
