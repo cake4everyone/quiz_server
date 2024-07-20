@@ -39,16 +39,16 @@ func keepAlive(c *quiz.Connection) {
 	})
 
 	for {
-		time.Sleep(viper.GetDuration("read_timeout") / 3)
+		time.Sleep(viper.GetDuration("webserver.read_timeout") / 3)
 		if c.WS == nil {
 			return
 		}
-		if c.GetLastResponse() > viper.GetDuration("read_timeout") {
+		if c.GetLastResponse() > viper.GetDuration("webserver.read_timeout") {
 			log.Printf("App did not respond in time! Last response was %s ago. Closing connection...", c.GetLastResponse())
 			c.Close()
 			return
 		}
-		err := c.WS.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(viper.GetDuration("read_timeout")))
+		err := c.WS.WriteControl(websocket.PingMessage, []byte("PING"), time.Now().Add(viper.GetDuration("webserver.read_timeout")))
 		if err != nil {
 			log.Printf("Failed to send websocket ping message: %v | Closing connection...", err)
 			c.Close()

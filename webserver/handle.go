@@ -43,7 +43,7 @@ func handleFetchQuestions(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{\"message\":\"missing required key \\\"password\\\"!\"}"))
 		return
 	}
-	if body.Password != viper.GetString("connection.password") {
+	if body.Password != viper.GetString("webserver.password") {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
