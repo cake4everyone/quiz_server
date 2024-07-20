@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/gorilla/websocket v1.5.1
-	github.com/kesuaheli/twitchgo v0.2.8-0.20240421214810-4ff99aa32962
+	github.com/kesuaheli/twitchgo v0.2.8-0.20240720003446-e1cc409cf403
 	google.golang.org/api v0.154.0
 )
 

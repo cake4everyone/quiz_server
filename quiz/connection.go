@@ -85,7 +85,7 @@ func (c *Connection) Close() {
 	}
 }
 
-func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchgo.IRCUser, msg string) {
+func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchgo.IRCUser, msg, msgID string, tags twitchgo.IRCMessageTags) {
 	if c.WS == nil || c.Game == nil {
 		return
 	}
@@ -99,15 +99,30 @@ func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchg
 		// ignore users who already voted
 		return
 	}
-	c.Game.voteHistory[source.Nickname] = true
-	c.Game.ChatVoteCount[vote-1]++
 
 	v := wsVoteMessage{
 		Type:     "CHAT_VOTE",
 		Username: source.Nickname,
 	}
 
-	err := c.WS.WriteJSON(v)
+	if tags.IsBroadcaster() {
+		if c.Game.StreamerVote != 0 {
+			// ignore streamer vote when already voted
+			return
+		}
+		c.Game.StreamerVote = vote
+		v.Type = "STREAMER_VOTE"
+	} else {
+		c.Game.voteHistory[source.Nickname] = true
+		c.Game.ChatVoteCount[vote-1]++
+	}
+
+	err := c.Twitch.DeleteMessage("", msgID)
+	if err != nil {
+		log.Printf("Failed to delete message: %v", err)
+	}
+
+	err = c.WS.WriteJSON(v)
 	if err != nil {
 		log.Printf("Error writing chat vote to websocket: %v", err)
 	}

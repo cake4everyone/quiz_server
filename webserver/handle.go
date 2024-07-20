@@ -248,6 +248,11 @@ func handleStreamerVote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.Game.StreamerVote != 0 {
+		http.Error(w, "Streamer did already leave a vote!", http.StatusPreconditionFailed)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Failed to read request body: %v", err)

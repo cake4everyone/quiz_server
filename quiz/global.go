@@ -112,7 +112,7 @@ func (c *Connection) LeaveTwitchChannel() {
 	}
 }
 
-func OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg string) {
+func OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchgo.IRCUser, msg, msgID string, tags twitchgo.IRCMessageTags) {
 	channelMapMu.RLock()
 	defer channelMapMu.RUnlock()
 	channel, _ = strings.CutPrefix(channel, "#")
@@ -122,5 +122,5 @@ func OnTwitchChannelMessage(t *twitchgo.Session, channel string, source *twitchg
 		TwitchIRC.LeaveChannel(channel)
 		return
 	}
-	c.OnTwitchChannelMessage(t, source, msg)
+	c.OnTwitchChannelMessage(t, source, msg, msgID, tags)
 }
