@@ -36,7 +36,7 @@ type CategoryGroup struct {
 }
 
 type Category struct {
-	Title       string      `json:"-"`
+	Title       string      `json:"title"`
 	Description string      `json:"description"`
 	Pool        []*Question `json:"pool"`
 }

@@ -178,10 +178,20 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCategory(w http.ResponseWriter, r *http.Request) {
-	categories := make(map[string]int)
+	type ResponseCategory struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Count       int    `json:"count"`
+	}
+
+	categories := make(map[string][]ResponseCategory)
 	for _, group := range quiz.Categories {
 		for _, cat := range group.Categories {
-			categories[cat.Title] = len(cat.Pool)
+			responseCategory := ResponseCategory{
+				Title:       cat.Title,
+				Description: cat.Description,
+				Count:       len(cat.Pool)}
+			categories[group.Title] = append(categories[group.Title], responseCategory)
 		}
 	}
 
