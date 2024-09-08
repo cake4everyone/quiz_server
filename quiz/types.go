@@ -28,18 +28,41 @@ type GameSummary struct {
 	ChatWon        int `json:"chat_won"`
 }
 
+type CategoryGroupDefinition struct {
+	ID         string               `json:"id"`
+	Title      string               `json:"title"`
+	IsDev      bool                 `json:"-"`
+	IsRelease  bool                 `json:"-"`
+	Categories []CategoryDefinition `json:"categories"`
+}
+
 type CategoryGroup struct {
-	ID         string     `json:"id"`
-	Title      string     `json:"title"`
-	IsDev      bool       `json:"-"`
-	IsRelease  bool       `json:"-"`
+	CategoryGroupDefinition
 	Categories []Category `json:"categories"`
 }
 
+func (cg CategoryGroup) GetDefinition() CategoryGroupDefinition {
+	cg.CategoryGroupDefinition.Categories = make([]CategoryDefinition, len(cg.Categories))
+	for i, c := range cg.Categories {
+		cg.CategoryGroupDefinition.Categories[i] = c.GetDefinition()
+	}
+	return cg.CategoryGroupDefinition
+}
+
+type CategoryDefinition struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Count int    `json:"count,omitempty"`
+}
+
 type Category struct {
-	ID    string      `json:"id"`
-	Title string      `json:"title"`
-	Pool  []*Question `json:"pool"`
+	CategoryDefinition
+	Pool []*Question `json:"pool"`
+}
+
+func (c Category) GetDefinition() CategoryDefinition {
+	c.CategoryDefinition.Count = len(c.Pool)
+	return c.CategoryDefinition
 }
 
 type Question struct {
@@ -94,6 +117,14 @@ func (cg categoryGroups) GetCategoryByName(name string) Category {
 		}
 	}
 	return Category{}
+}
+
+func (cg categoryGroups) GetDefinition() (definitions map[int]CategoryGroupDefinition) {
+	definitions = make(map[int]CategoryGroupDefinition, len(cg))
+	for color, group := range cg {
+		definitions[color] = group.GetDefinition()
+	}
+	return definitions
 }
 
 func (g Game) GetRoundSummary() RoundSummary {

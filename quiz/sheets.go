@@ -80,7 +80,8 @@ func parseCategoryGroups(s *sheets.Sheet, categories map[int]CategoryGroup) {
 }
 
 func parseSheet(s *sheets.Sheet) Category {
-	category := Category{ID: s.Properties.Title}
+	var category Category
+	category.ID = s.Properties.Title
 
 	for rowNum, row := range s.Data[0].RowData {
 		if rowNum <= 1 {
