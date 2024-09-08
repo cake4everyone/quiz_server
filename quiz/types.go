@@ -29,6 +29,7 @@ type GameSummary struct {
 }
 
 type CategoryGroup struct {
+	ID         string     `json:"id"`
 	Title      string     `json:"title"`
 	IsDev      bool       `json:"-"`
 	IsRelease  bool       `json:"-"`

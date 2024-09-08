@@ -71,6 +71,7 @@ func parseCategoryGroups(s *sheets.Sheet, categories map[int]CategoryGroup) {
 
 		hexColor := intFromColor(color)
 		categoryGroup := categories[hexColor]
+		categoryGroup.ID = row.Values[0].FormattedValue
 		categoryGroup.Title = row.Values[1].FormattedValue
 		categoryGroup.IsDev = row.Values[2].FormattedValue == "TRUE"
 		categoryGroup.IsRelease = row.Values[3].FormattedValue == "TRUE"

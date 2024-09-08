@@ -183,16 +183,27 @@ func handleCategory(w http.ResponseWriter, r *http.Request) {
 		Description string `json:"description"`
 		Count       int    `json:"count"`
 	}
+	type ResponseGroup struct {
+		Title      string             `json:"title"`
+		Color      int                `json:"color"`
+		Categories []ResponseCategory `json:"categories"`
+	}
 
-	categories := make(map[string][]ResponseCategory)
-	for _, group := range quiz.Categories {
+	categories := make(map[string]ResponseGroup)
+	for color, group := range quiz.Categories {
+		responseGroup := ResponseGroup{
+			Title:      group.Title,
+			Color:      color,
+			Categories: make([]ResponseCategory, 0, len(group.Categories)),
+		}
 		for _, cat := range group.Categories {
 			responseCategory := ResponseCategory{
 				Title:       cat.Title,
 				Description: cat.Description,
 				Count:       len(cat.Pool)}
-			categories[group.Title] = append(categories[group.Title], responseCategory)
+			responseGroup.Categories = append(responseGroup.Categories, responseCategory)
 		}
+		categories[group.ID] = responseGroup
 	}
 
 	b, err := json.Marshal(categories)
