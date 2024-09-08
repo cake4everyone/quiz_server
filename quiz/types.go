@@ -2,6 +2,7 @@ package quiz
 
 import (
 	logger "log"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -222,7 +223,8 @@ func (q Question) ToRound() Round {
 			q.Wrong[i], q.Wrong[j] = q.Wrong[j], q.Wrong[i]
 		})
 	}
-	for _, a := range q.Wrong[:3] {
+	num_wrong := int(math.Min(float64(cap(q.Wrong)), 3))
+	for _, a := range q.Wrong[:num_wrong] {
 		answers = append(answers, a.Text)
 	}
 
