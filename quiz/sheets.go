@@ -80,13 +80,13 @@ func parseCategoryGroups(s *sheets.Sheet, categories map[int]CategoryGroup) {
 }
 
 func parseSheet(s *sheets.Sheet) Category {
-	category := Category{Title: s.Properties.Title}
+	category := Category{ID: s.Properties.Title}
 
 	for rowNum, row := range s.Data[0].RowData {
 		if rowNum <= 1 {
 			if rowNum == 0 && len(row.Values) > 0 {
-				// get description from first cell in first row
-				category.Description = row.Values[0].FormattedValue
+				// get title from first cell in first row
+				category.Title = row.Values[0].FormattedValue
 			}
 			// ignore rest of 1st + 2nd row
 			continue

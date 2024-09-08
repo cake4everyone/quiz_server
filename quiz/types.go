@@ -37,9 +37,9 @@ type CategoryGroup struct {
 }
 
 type Category struct {
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	Pool        []*Question `json:"pool"`
+	ID    string      `json:"id"`
+	Title string      `json:"title"`
+	Pool  []*Question `json:"pool"`
 }
 
 type Question struct {
@@ -88,7 +88,7 @@ var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgpref
 func (cg categoryGroups) GetCategoryByName(name string) Category {
 	for _, group := range cg {
 		for _, c := range group.Categories {
-			if c.Title == name {
+			if c.ID == name {
 				return c
 			}
 		}
@@ -198,7 +198,7 @@ func (c Category) GetRounds(n int) []*Round {
 			continue
 		}
 		round := q.ToRound()
-		round.Category = c.Title
+		round.Category = c.ID
 		rounds = append(rounds, &round)
 	}
 	return rounds

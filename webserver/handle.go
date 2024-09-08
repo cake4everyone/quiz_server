@@ -179,9 +179,9 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 func handleCategory(w http.ResponseWriter, r *http.Request) {
 	type ResponseCategory struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Count       int    `json:"count"`
+		ID    string `json:"id"`
+		Title string `json:"title"`
+		Count int    `json:"count"`
 	}
 	type ResponseGroup struct {
 		Title      string             `json:"title"`
@@ -198,9 +198,10 @@ func handleCategory(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, cat := range group.Categories {
 			responseCategory := ResponseCategory{
-				Title:       cat.Title,
-				Description: cat.Description,
-				Count:       len(cat.Pool)}
+				ID:    cat.ID,
+				Title: cat.Title,
+				Count: len(cat.Pool),
+			}
 			responseGroup.Categories = append(responseGroup.Categories, responseCategory)
 		}
 		categories[group.ID] = responseGroup
