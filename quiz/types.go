@@ -84,12 +84,12 @@ const (
 )
 
 type Round struct {
-	Question string   `json:"question"`
-	Answers  []string `json:"answers"`
-	Correct  int      `json:"correct,omitempty"`
-	Current  int      `json:"current_round"`
-	Max      int      `json:"max_round"`
-	Category string   `json:"category"`
+	Question string             `json:"question"`
+	Answers  []string           `json:"answers"`
+	Correct  int                `json:"correct,omitempty"`
+	Current  int                `json:"current_round"`
+	Max      int                `json:"max_round"`
+	Category CategoryDefinition `json:"category"`
 }
 
 type RoundSummary struct {
@@ -229,7 +229,7 @@ func (c Category) GetRounds(n int) []*Round {
 			continue
 		}
 		round := q.ToRound()
-		round.Category = c.ID
+		round.Category = c.GetDefinition()
 		rounds = append(rounds, &round)
 	}
 	return rounds
