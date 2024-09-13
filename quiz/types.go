@@ -29,17 +29,41 @@ type GameSummary struct {
 	ChatWon        int `json:"chat_won"`
 }
 
+type CategoryGroupDefinition struct {
+	ID         string               `json:"id"`
+	Title      string               `json:"title"`
+	IsDev      bool                 `json:"-"`
+	IsRelease  bool                 `json:"-"`
+	Categories []CategoryDefinition `json:"categories"`
+}
+
 type CategoryGroup struct {
-	Title      string     `json:"title"`
-	IsDev      bool       `json:"-"`
-	IsRelease  bool       `json:"-"`
+	CategoryGroupDefinition
 	Categories []Category `json:"categories"`
 }
 
+func (cg CategoryGroup) GetDefinition() CategoryGroupDefinition {
+	cg.CategoryGroupDefinition.Categories = make([]CategoryDefinition, len(cg.Categories))
+	for i, c := range cg.Categories {
+		cg.CategoryGroupDefinition.Categories[i] = c.GetDefinition()
+	}
+	return cg.CategoryGroupDefinition
+}
+
+type CategoryDefinition struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Count int    `json:"count,omitempty"`
+}
+
 type Category struct {
-	Title       string      `json:"-"`
-	Description string      `json:"description"`
-	Pool        []*Question `json:"pool"`
+	CategoryDefinition
+	Pool []*Question `json:"pool"`
+}
+
+func (c Category) GetDefinition() CategoryDefinition {
+	c.CategoryDefinition.Count = len(c.Pool)
+	return c.CategoryDefinition
 }
 
 type Question struct {
@@ -61,12 +85,12 @@ const (
 )
 
 type Round struct {
-	Question string   `json:"question"`
-	Answers  []string `json:"answers"`
-	Correct  int      `json:"correct,omitempty"`
-	Current  int      `json:"current_round"`
-	Max      int      `json:"max_round"`
-	Category string   `json:"category"`
+	Question string             `json:"question"`
+	Answers  []string           `json:"answers"`
+	Correct  int                `json:"correct,omitempty"`
+	Current  int                `json:"current_round"`
+	Max      int                `json:"max_round"`
+	Category CategoryDefinition `json:"category"`
 }
 
 type RoundSummary struct {
@@ -88,12 +112,20 @@ var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgpref
 func (cg categoryGroups) GetCategoryByName(name string) Category {
 	for _, group := range cg {
 		for _, c := range group.Categories {
-			if c.Title == name {
+			if c.ID == name {
 				return c
 			}
 		}
 	}
 	return Category{}
+}
+
+func (cg categoryGroups) GetDefinition() (definitions map[int]CategoryGroupDefinition) {
+	definitions = make(map[int]CategoryGroupDefinition, len(cg))
+	for color, group := range cg {
+		definitions[color] = group.GetDefinition()
+	}
+	return definitions
 }
 
 func (g Game) GetRoundSummary() RoundSummary {
@@ -198,7 +230,7 @@ func (c Category) GetRounds(n int) []*Round {
 			continue
 		}
 		round := q.ToRound()
-		round.Category = c.Title
+		round.Category = c.GetDefinition()
 		rounds = append(rounds, &round)
 	}
 	return rounds
