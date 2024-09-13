@@ -2,7 +2,6 @@ package quiz
 
 import (
 	logger "log"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -73,8 +72,8 @@ type Question struct {
 }
 
 type DisplayableContent struct {
-	Type ContentType
-	Text string
+	Type ContentType `json:"type"`
+	Text string      `json:"text"`
 }
 
 type ContentType uint8
@@ -85,12 +84,13 @@ const (
 )
 
 type Round struct {
-	Question string             `json:"question"`
-	Answers  []string           `json:"answers"`
-	Correct  int                `json:"correct,omitempty"`
-	Current  int                `json:"current_round"`
-	Max      int                `json:"max_round"`
-	Category CategoryDefinition `json:"category"`
+	Question DisplayableContent   `json:"question"`
+	Answers  []DisplayableContent `json:"answers"`
+	Correct  int                  `json:"correct,omitempty"`
+	Current  int                  `json:"current_round"`
+	Max      int                  `json:"max_round"`
+	Group    string               `json:"group"`
+	Category CategoryDefinition   `json:"category"`
 }
 
 type RoundSummary struct {
@@ -237,16 +237,16 @@ func (c Category) GetRounds(n int) []*Round {
 }
 
 func (q Question) ToRound() Round {
-	var answers []string
+	var answers []DisplayableContent
 
 	// select one correct answer
 	if len(q.Correct) > 1 {
 		rand.Shuffle(len(q.Correct), func(i, j int) {
 			q.Correct[i], q.Correct[j] = q.Correct[j], q.Correct[i]
 		})
-		answers = append(answers, q.Correct[rand.Intn(len(q.Correct)-1)].Text)
+		answers = append(answers, q.Correct[rand.Intn(len(q.Correct)-1)])
 	} else {
-		answers = append(answers, q.Correct[0].Text)
+		answers = append(answers, q.Correct[0])
 	}
 
 	// select up to 3 wrong answers
@@ -254,10 +254,11 @@ func (q Question) ToRound() Round {
 		rand.Shuffle(len(q.Wrong), func(i, j int) {
 			q.Wrong[i], q.Wrong[j] = q.Wrong[j], q.Wrong[i]
 		})
-	}
-	num_wrong := int(math.Min(float64(cap(q.Wrong)), 3))
-	for _, a := range q.Wrong[:num_wrong] {
-		answers = append(answers, a.Text)
+		for _, a := range q.Wrong[:3] {
+			answers = append(answers, a)
+		}
+	} else {
+		answers = append(answers, q.Wrong...)
 	}
 
 	var correct int
@@ -269,7 +270,7 @@ func (q Question) ToRound() Round {
 	})
 
 	return Round{
-		Question: q.Question.Text,
+		Question: q.Question,
 		Answers:  answers,
 		Correct:  correct + 1,
 	}
