@@ -145,7 +145,7 @@ func (c *Connection) NewGame(data []byte) error {
 	var rounds []*Round
 	for name, n := range gameData.Categories {
 		cat := Categories.GetCategoryByName(name)
-		if cat.Title == "" {
+		if cat.ID == "" {
 			return fmt.Errorf("create game: unknown category '%s'", name)
 		}
 		rounds = append(rounds, cat.GetRounds(n)...)

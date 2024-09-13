@@ -45,19 +45,19 @@ func FetchQuestions() (err error) {
 			var data []byte
 			data, err = json.MarshalIndent(cat, "", "	")
 			if err != nil {
-				log.Printf("Error marshaling category '%s': %v", cat.Title, err)
+				log.Printf("Error marshaling category '%s': %v", cat.ID, err)
 				continue
 			}
 			err = os.Mkdir("sheets/"+group.Title, os.ModeDir)
 			if err != nil {
 				if !errors.Is(err, os.ErrExist) {
-					log.Printf("Error creting json file of category '%s/%s': %v", group.Title, cat.Title, err)
+					log.Printf("Error creting json file of category '%s/%s': %v", group.Title, cat.ID, err)
 					continue
 				}
 			}
-			err = os.WriteFile("sheets/"+group.Title+"/"+cat.Title+".json", data, 0644)
+			err = os.WriteFile("sheets/"+group.Title+"/"+cat.ID+".json", data, 0644)
 			if err != nil {
-				log.Printf("Error writing json file of category '%s/%s': %v", group.Title, cat.Title, err)
+				log.Printf("Error writing json file of category '%s/%s': %v", group.Title, cat.ID, err)
 			}
 		}
 	}

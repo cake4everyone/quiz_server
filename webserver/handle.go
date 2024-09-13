@@ -178,14 +178,7 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleCategory(w http.ResponseWriter, r *http.Request) {
-	categories := make(map[string]int)
-	for _, group := range quiz.Categories {
-		for _, cat := range group.Categories {
-			categories[cat.Title] = len(cat.Pool)
-		}
-	}
-
-	b, err := json.Marshal(categories)
+	b, err := json.Marshal(quiz.Categories.GetDefinition())
 	if err != nil {
 		log.Printf("Failed to marshal categories: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
