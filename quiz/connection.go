@@ -159,6 +159,7 @@ func (c *Connection) NewGame(data []byte) error {
 			newRounds := category.GetRounds(amount)
 			for _, r := range newRounds {
 				r.Group = Categories.GetGroupByID(groupID).GetDefinition()
+				r.Group.Categories = nil
 			}
 			rounds = append(rounds, newRounds...)
 		}

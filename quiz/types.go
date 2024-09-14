@@ -34,7 +34,7 @@ type CategoryGroupDefinition struct {
 	Title      string               `json:"title"`
 	IsDev      bool                 `json:"-"`
 	IsRelease  bool                 `json:"-"`
-	Categories []CategoryDefinition `json:"categories"`
+	Categories []CategoryDefinition `json:"categories,omitempty"`
 }
 
 type CategoryGroup struct {
