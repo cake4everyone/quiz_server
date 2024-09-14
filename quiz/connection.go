@@ -129,9 +129,13 @@ func (c *Connection) OnTwitchChannelMessage(t *twitchgo.Session, source *twitchg
 }
 
 func (c *Connection) NewGame(data []byte) error {
+	type groupData struct {
+		Random     int            `json:"random,omitempty"`
+		Categories map[string]int `json:"categories,omitempty"`
+	}
 	var gameData struct {
-		Categories    map[string]int `json:"categories"`
-		RoundDuration int            `json:"round_duration"`
+		Groups        map[string]groupData `json:"groups"`
+		RoundDuration int                  `json:"round_duration"`
 	}
 	err := json.Unmarshal(data, &gameData)
 	if err != nil {
@@ -143,12 +147,21 @@ func (c *Connection) NewGame(data []byte) error {
 	}
 
 	var rounds []*Round
-	for name, n := range gameData.Categories {
-		cat := Categories.GetCategoryByName(name)
-		if cat.ID == "" {
-			return fmt.Errorf("create game: unknown category '%s'", name)
+	for groupID, group := range gameData.Groups {
+		Categories.ShuffleCategories(groupID, group.Random, group.Categories)
+
+		for categoryID, amount := range group.Categories {
+			category := Categories.GetCategoryByID(categoryID)
+			if category.ID == "" {
+				return fmt.Errorf("create game: unknown category '%s'", categoryID)
+			}
+
+			newRounds := category.GetRounds(amount)
+			for _, r := range newRounds {
+				r.Group = Categories.GetGroupByID(groupID).GetDefinition()
+			}
+			rounds = append(rounds, newRounds...)
 		}
-		rounds = append(rounds, cat.GetRounds(n)...)
 	}
 	max := len(rounds)
 	if max == 0 {

@@ -85,12 +85,13 @@ const (
 )
 
 type Round struct {
-	Question string             `json:"question"`
-	Answers  []string           `json:"answers"`
-	Correct  int                `json:"correct,omitempty"`
-	Current  int                `json:"current_round"`
-	Max      int                `json:"max_round"`
-	Category CategoryDefinition `json:"category"`
+	Question string                  `json:"question"`
+	Answers  []string                `json:"answers"`
+	Correct  int                     `json:"correct,omitempty"`
+	Current  int                     `json:"current_round"`
+	Max      int                     `json:"max_round"`
+	Group    CategoryGroupDefinition `json:"group"`
+	Category CategoryDefinition      `json:"category"`
 }
 
 type RoundSummary struct {
@@ -103,21 +104,31 @@ type RoundSummary struct {
 }
 
 type categoryGroups map[int]CategoryGroup
+type categoryGroupDefinitions map[int]CategoryGroupDefinition
 
 // Categories is the main list of all Categories and Groups
 var Categories categoryGroups
 
 var log = logger.New(logger.Writer(), "[WEB] ", logger.LstdFlags|logger.Lmsgprefix)
 
-func (cg categoryGroups) GetCategoryByName(name string) Category {
+func (cg categoryGroups) GetCategoryByID(id string) Category {
 	for _, group := range cg {
 		for _, c := range group.Categories {
-			if c.ID == name {
+			if c.ID == id {
 				return c
 			}
 		}
 	}
 	return Category{}
+}
+
+func (cg categoryGroups) GetGroupByID(id string) CategoryGroup {
+	for _, group := range cg {
+		if group.ID == id {
+			return group
+		}
+	}
+	return CategoryGroup{}
 }
 
 func (cg categoryGroups) GetDefinition() (definitions map[int]CategoryGroupDefinition) {
@@ -126,6 +137,35 @@ func (cg categoryGroups) GetDefinition() (definitions map[int]CategoryGroupDefin
 		definitions[color] = group.GetDefinition()
 	}
 	return definitions
+}
+
+func (cg categoryGroups) ShuffleCategories(groupID string, amount int, categories map[string]int) {
+	if amount == 0 {
+		return
+	}
+	group := cg.GetGroupByID(groupID)
+	if group.ID == "" {
+		return
+	}
+
+	if categories == nil {
+		categories = make(map[string]int)
+	}
+	var shuffleSelection = make([]Category, 0, len(group.Categories))
+	for _, category := range group.Categories {
+		if categories[category.ID] < len(category.Pool) {
+			shuffleSelection = append(shuffleSelection, category)
+		}
+	}
+	for range amount {
+		categoryIndex := rand.Intn(len(shuffleSelection))
+		category := shuffleSelection[categoryIndex]
+
+		categories[category.ID]++
+		if categories[category.ID] > len(category.Pool) {
+			shuffleSelection = append(shuffleSelection[:categoryIndex], shuffleSelection[categoryIndex+1:]...)
+		}
+	}
 }
 
 func (g Game) GetRoundSummary() RoundSummary {
