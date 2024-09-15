@@ -48,16 +48,16 @@ func FetchQuestions() (err error) {
 				log.Printf("Error marshaling category '%s': %v", cat.ID, err)
 				continue
 			}
-			err = os.Mkdir("sheets/"+group.Title, os.ModeDir)
+			err = os.Mkdir("sheets/"+group.ID, os.ModeDir)
 			if err != nil {
 				if !errors.Is(err, os.ErrExist) {
-					log.Printf("Error creting json file of category '%s/%s': %v", group.Title, cat.ID, err)
+					log.Printf("Error creting json file of category '%s/%s': %v", group.ID, cat.ID, err)
 					continue
 				}
 			}
-			err = os.WriteFile("sheets/"+group.Title+"/"+cat.ID+".json", data, 0644)
+			err = os.WriteFile("sheets/"+group.ID+"/"+cat.ID+".json", data, 0644)
 			if err != nil {
-				log.Printf("Error writing json file of category '%s/%s': %v", group.Title, cat.ID, err)
+				log.Printf("Error writing json file of category '%s/%s': %v", group.ID, cat.ID, err)
 			}
 		}
 	}
