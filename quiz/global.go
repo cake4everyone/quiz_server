@@ -48,7 +48,7 @@ func FetchQuestions() (err error) {
 				log.Printf("Error marshaling category '%s': %v", cat.ID, err)
 				continue
 			}
-			err = os.Mkdir("sheets/"+group.ID, os.ModeDir)
+			err = os.Mkdir("sheets/"+group.ID, os.ModeDir|0755)
 			if err != nil {
 				if !errors.Is(err, os.ErrExist) {
 					log.Printf("Error creting json file of category '%s/%s': %v", group.ID, cat.ID, err)
