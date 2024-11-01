@@ -327,6 +327,10 @@ func getRoundMedia(w http.ResponseWriter, r *http.Request) {
 		w.Write(answer.Media)
 		return
 	}
+	if round.Question.Type != quiz.CONTENTTEXT && round.Question.Text == media {
+		w.Write(round.Question.Media)
+		return
+	}
 	http.Error(w, "media not found", http.StatusNotFound)
 }
 
