@@ -1,8 +1,13 @@
 package quiz
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"math"
 	"net/http"
@@ -114,7 +119,7 @@ func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
 			continue
 		}
 		cellContent := getContentFromCell(cell)
-		if cellContent == (DisplayableContent{}) {
+		if cellContent.Text == "" {
 			continue
 		}
 
@@ -138,7 +143,7 @@ func getQuestionFromRow(row *sheets.RowData) (qq *Question, err error) {
 	}
 
 	// validation
-	if qq.Question == (DisplayableContent{}) {
+	if qq.Question.Text == "" {
 		if len(qq.Correct) == 0 && len(qq.Wrong) == 0 {
 			return nil, nil
 		}
@@ -224,16 +229,26 @@ func parseCellFormula(formula, parameter string) (content DisplayableContent) {
 			log.Printf("Error: get image from url '%s': %v", url, err)
 			return
 		}
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("Error: reading image response: %v", err)
-			return
-		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			data, _ := io.ReadAll(resp.Body)
 			log.Printf("Error: could not get image from url: got '%s': %s", resp.Status, string(data))
 			return
 		}
-		content.Text = string(data)
+
+		img, imgFormat, err := image.Decode(resp.Body)
+		if err != nil {
+			log.Printf("Error: decoding image from '%s': %v", url, err)
+			return
+		}
+		hash := sha256.New()
+		imgData := &bytes.Buffer{}
+		err = png.Encode(io.MultiWriter(hash, imgData), img)
+		if err != nil {
+			log.Printf("Error: encoding image (%s to png): %v", imgFormat, err)
+			return
+		}
+		content.Text = fmt.Sprintf("%x", hash.Sum(nil))
+		content.Media = imgData.Bytes()
 	}
 	return
 }

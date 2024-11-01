@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/kesuaheli/twitchgo"
 	"github.com/spf13/viper"
 )
@@ -299,6 +300,34 @@ func getRound(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(b)
+}
+func getRoundMedia(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if c.Game == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if c.Game.Current == 0 {
+		http.Error(w, "no active round", http.StatusNotFound)
+		return
+	}
+
+	media := mux.Vars(r)["media"]
+	round := *c.Game.Rounds[c.Game.Current-1]
+	for _, answer := range round.Answers {
+		if answer.Type == quiz.CONTENTTEXT || answer.Text != media {
+			continue
+		}
+		w.Write(answer.Media)
+		return
+	}
+	http.Error(w, "media not found", http.StatusNotFound)
 }
 
 func nextRound(w http.ResponseWriter, r *http.Request) {

@@ -73,8 +73,9 @@ type Question struct {
 }
 
 type DisplayableContent struct {
-	Type ContentType `json:"type"`
-	Text string      `json:"text"`
+	Type  ContentType `json:"type"`
+	Text  string      `json:"text"`
+	Media []byte      `json:"-"`
 }
 
 type ContentType uint8
