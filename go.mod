@@ -5,6 +5,7 @@ go 1.23.1
 require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/kesuaheli/twitchgo v0.2.8-0.20240720003446-e1cc409cf403
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	google.golang.org/api v0.197.0
 )
 

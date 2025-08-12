@@ -14,6 +14,7 @@ import (
 	"quiz_backend/google"
 	"regexp"
 
+	"github.com/nfnt/resize"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -21,7 +22,7 @@ var spreadsheetFormulaRegex *regexp.Regexp
 
 func init() {
 	var err error
-	spreadsheetFormulaRegex, err = regexp.Compile("^=([A-Z]+)\\((.*)\\)$")
+	spreadsheetFormulaRegex, err = regexp.Compile(`^=([A-Z]+)\((.*)\)$`)
 	if err != nil {
 		panic("failed to compile spreadsheet formula regex: " + err.Error())
 	}
@@ -240,6 +241,7 @@ func parseCellFormula(formula, parameter string) (content DisplayableContent) {
 			log.Printf("Error: decoding image from '%s': %v", url, err)
 			return
 		}
+		img = resize.Resize(200, 200, img, resize.Lanczos3)
 		hash := sha256.New()
 		imgData := &bytes.Buffer{}
 		err = png.Encode(io.MultiWriter(hash, imgData), img)
