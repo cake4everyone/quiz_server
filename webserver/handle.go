@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"quiz_backend/database"
 	"quiz_backend/quiz"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -319,16 +320,51 @@ func getRoundMedia(w http.ResponseWriter, r *http.Request) {
 	}
 
 	media := mux.Vars(r)["media"]
+	urlQueryParams := r.URL.Query()
+	var width, height uint
+	if sizeStr := urlQueryParams.Get("width"); sizeStr != "" {
+		size, _ := strconv.ParseUint(sizeStr, 10, 32)
+		width = uint(size)
+	} else {
+		http.Error(w, "missing required key 'width'", http.StatusBadRequest)
+		return
+	}
+	if sizeStr := urlQueryParams.Get("height"); sizeStr != "" {
+		size, _ := strconv.ParseUint(sizeStr, 10, 32)
+		height = uint(size)
+	} else {
+		http.Error(w, "missing required key 'height'", http.StatusBadRequest)
+		return
+	}
+	if width == 0 || height == 0 {
+		http.Error(w, "invalid width or height", http.StatusBadRequest)
+		return
+	}
+
 	round := *c.Game.Rounds[c.Game.Current-1]
 	for _, answer := range round.Answers {
 		if answer.Type == quiz.CONTENTTEXT || answer.Text != media {
 			continue
 		}
-		w.Write(answer.Media)
+		mediaData, err := answer.EndecodeImage(width, height)
+		if err != nil {
+			log.Printf("Failed to encode image: %v", err)
+			http.Error(w, "failed to encode image", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(mediaData)
 		return
 	}
 	if round.Question.Type != quiz.CONTENTTEXT && round.Question.Text == media {
-		w.Write(round.Question.Media)
+		mediaData, err := round.Question.EndecodeImage(width, height)
+		if err != nil {
+			log.Printf("Failed to encode image: %v", err)
+			http.Error(w, "failed to encode image", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(mediaData)
 		return
 	}
 	http.Error(w, "media not found", http.StatusNotFound)

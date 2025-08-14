@@ -1,7 +1,6 @@
 package quiz
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"quiz_backend/google"
 	"regexp"
 
-	"github.com/nfnt/resize"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -232,7 +230,7 @@ func parseCellFormula(formula, parameter string) (content DisplayableContent) {
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			data, _ := io.ReadAll(resp.Body)
-			log.Printf("Error: could not get image from url: got '%s': %s", resp.Status, string(data))
+			log.Printf("Error: could not get image from url (%s): got '%s': %s", url, resp.Status, string(data))
 			return
 		}
 
@@ -241,16 +239,14 @@ func parseCellFormula(formula, parameter string) (content DisplayableContent) {
 			log.Printf("Error: decoding image from '%s': %v", url, err)
 			return
 		}
-		img = resize.Resize(200, 200, img, resize.Lanczos3)
 		hash := sha256.New()
-		imgData := &bytes.Buffer{}
-		err = png.Encode(io.MultiWriter(hash, imgData), img)
+		err = png.Encode(hash, img)
 		if err != nil {
 			log.Printf("Error: encoding image (%s to png): %v", imgFormat, err)
 			return
 		}
 		content.Text = fmt.Sprintf("%x", hash.Sum(nil))
-		content.Media = imgData.Bytes()
+		content.Media = img
 	}
 	return
 }

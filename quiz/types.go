@@ -1,10 +1,16 @@
 package quiz
 
 import (
+	"bytes"
+	"fmt"
+	"image"
+	"image/png"
 	logger "log"
 	"math"
 	"math/rand"
 	"time"
+
+	"github.com/nfnt/resize"
 )
 
 type Game struct {
@@ -75,7 +81,7 @@ type Question struct {
 type DisplayableContent struct {
 	Type  ContentType `json:"type"`
 	Text  string      `json:"text"`
-	Media []byte      `json:"-"`
+	Media image.Image `json:"-"`
 }
 
 type ContentType uint8
@@ -312,4 +318,28 @@ func (q Question) ToRound() Round {
 		Answers:  answers,
 		Correct:  correct + 1,
 	}
+}
+
+func (content DisplayableContent) EndecodeImage(width, height uint) (b []byte, err error) {
+	if content.Type != CONTENTIMAGE {
+		return nil, fmt.Errorf("content is not an image")
+	}
+
+	original_width, original_height := uint(content.Media.Bounds().Max.X-content.Media.Bounds().Min.X), uint(content.Media.Bounds().Max.Y-content.Media.Bounds().Min.Y)
+	ratio := float64(original_height) / float64(original_width)
+
+	var img image.Image
+	if ratio > 1 {
+		width = uint(float64(height) / ratio)
+	} else {
+		height = uint(float64(width) * ratio)
+	}
+	img = resize.Resize(width, height, content.Media, resize.Lanczos3)
+
+	imgData := &bytes.Buffer{}
+	err = png.Encode(imgData, img)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding image to png: %w", err)
+	}
+	return imgData.Bytes(), nil
 }
