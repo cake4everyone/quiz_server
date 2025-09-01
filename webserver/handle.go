@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"quiz_backend/database"
 	"quiz_backend/quiz"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/kesuaheli/twitchgo"
 	"github.com/spf13/viper"
 )
@@ -299,6 +301,73 @@ func getRound(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(b)
+}
+func getRoundMedia(w http.ResponseWriter, r *http.Request) {
+	c, ok := isAuthorized(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if c.Game == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if c.Game.Current == 0 {
+		http.Error(w, "no active round", http.StatusNotFound)
+		return
+	}
+
+	media := mux.Vars(r)["media"]
+	urlQueryParams := r.URL.Query()
+	var width, height uint
+	if sizeStr := urlQueryParams.Get("width"); sizeStr != "" {
+		size, _ := strconv.ParseUint(sizeStr, 10, 32)
+		width = uint(size)
+	} else {
+		http.Error(w, "missing required key 'width'", http.StatusBadRequest)
+		return
+	}
+	if sizeStr := urlQueryParams.Get("height"); sizeStr != "" {
+		size, _ := strconv.ParseUint(sizeStr, 10, 32)
+		height = uint(size)
+	} else {
+		http.Error(w, "missing required key 'height'", http.StatusBadRequest)
+		return
+	}
+	if width == 0 || height == 0 {
+		http.Error(w, "invalid width or height", http.StatusBadRequest)
+		return
+	}
+
+	round := *c.Game.Rounds[c.Game.Current-1]
+	for _, answer := range round.Answers {
+		if answer.Type == quiz.CONTENTTEXT || answer.Text != media {
+			continue
+		}
+		mediaData, err := answer.EndecodeImage(width, height)
+		if err != nil {
+			log.Printf("Failed to encode image: %v", err)
+			http.Error(w, "failed to encode image", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(mediaData)
+		return
+	}
+	if round.Question.Type != quiz.CONTENTTEXT && round.Question.Text == media {
+		mediaData, err := round.Question.EndecodeImage(width, height)
+		if err != nil {
+			log.Printf("Failed to encode image: %v", err)
+			http.Error(w, "failed to encode image", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(mediaData)
+		return
+	}
+	http.Error(w, "media not found", http.StatusNotFound)
 }
 
 func nextRound(w http.ResponseWriter, r *http.Request) {
