@@ -27,7 +27,7 @@ func GetUserByCredentials(username, password string) *User {
 	sha256 := sha256.Sum256([]byte(password))
 	password = hex.EncodeToString(sha256[:])
 
-	if regexp.MustCompile("^\\w+$").MatchString(username) {
+	if regexp.MustCompile(`^\w+$`).MatchString(username) {
 		return getUser("username=? AND password=?", username, password)
 	} else {
 		return getUser("email=? AND password=?", username, password)
